@@ -8,20 +8,20 @@ enum ModbusMasterType {
 }
 
 class SerialPort {
-  late String portName;
-  late int baudRate;
-  late SerialParity parity;
-  late int? dataBits;
-  late SerialStopBits stopBits;
-  late int? readTimeout;
-  late int? writeTimeout;
+  String? portName;
+  int? baudRate;
+  SerialParity? parity;
+  int? dataBits;
+  SerialStopBits? stopBits;
+  int? readTimeout;
+  int? writeTimeout;
 
   SerialPort({
-    required this.portName,
-    required this.baudRate,
-    required this.parity,
+    this.portName,
+    this.baudRate,
+    this.parity,
     this.dataBits,
-    required this.stopBits,
+    this.stopBits,
     this.readTimeout,
     this.writeTimeout,
   });

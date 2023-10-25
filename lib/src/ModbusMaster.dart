@@ -47,14 +47,13 @@ class ModbusMaster extends IModbus {
   Map<int, (String, int, int)> _TcpSet = {};
   Map<int, (int, SerialPort)> _RtuSet = {};
 
-  // Map<int, EasyModbus.ModbusClient> _client = {};
-  // Map<int, EasyModbus.ModbusClient> _tcpclient = {};
-
-  // EasyModbus.ModbusClient _rtuclient = EasyModbus.ModbusClient();
+  Map<int, ModbusClientSerialRtu> _client = {};
+  Map<int, ModbusClientSerialRtu> _tcpclient = {};
+  late ModbusClientSerialRtu _rtuclient;
 
   ModbusMasterType _masterType = ModbusMasterType.RTU;
-  // String ipAddress;
-  // int port;
+  String? ipAddress;
+  int? port;
   int readTimeout = 1000;
   int writeTimeout = 1000;
   final int sendOrReadMax = 100;
@@ -68,7 +67,7 @@ class ModbusMaster extends IModbus {
   bool regTypeFlag = false;
   (bool, bool, bool)? tuple;
 
-  // SerialPort serialPortRtu = SerialPort();
+  SerialPort serialPortRtu = SerialPort();
   List<int> rtu_unitIdentifier = [];
   List<String> portnames = [];
   int retransmissionsNum = 3;
@@ -90,6 +89,8 @@ class ModbusMaster extends IModbus {
   double doubleMinValue = double.parse('-1.7976931348623157E+308');
   double doubleMaxValue = double.parse('1.7976931348623157E+308');
 
+  static int comIndex = 0;
+
   /// 加载协议
   /// <param name="protocol">协议文件全路径</param>
   @override
@@ -106,6 +107,58 @@ class ModbusMaster extends IModbus {
     return returnEntity;
   }
 
+  /// <summary>
+  /// 读取通信连接状态
+  /// </summary>
+  /// <param name="index">通道号</param>
+  /// <returns>返回连接状态</returns>
+  bool getConnected(int index) {
+    try {
+      bool connected = false;
+      int startRegAddr = 0;
+      ReturnEntity returnEntity = ReturnEntity();
+
+      if (_masterType == ModbusMasterType.RTU) {
+        var rtuTuplenow = _RtuSet[index]!;
+        SerialPort serialPortRtunow = rtuTuplenow.$2;
+        int comindex = index;
+        for (int numindex = 0; numindex < _RtuSet.length; numindex++) {
+          if (_client.containsKey(numindex)) {
+            // EasyModbus.ModbusClient modbus_Client;
+            // _client.TryGetValue(numindex, out modbus_Client);
+            var modbus_Client = _client[numindex]!;
+            if (modbus_Client.portName == serialPortRtunow.portName) {
+              comindex = numindex;
+              break;
+            }
+          }
+        }
+        comIndex = comindex;
+
+        if (_client.containsKey(comIndex)) {
+          // List tempdata = _client[comIndex].ReadHoldingRegisters(startRegAddr, 1, tuple, out returnEntity);
+          if (returnEntity.status != -16448903 && returnEntity.status != -16448904) {
+            connected = _client[comIndex]!.isConnected;
+          } else {
+            connected = false;
+          }
+        }
+      } else if (_masterType == ModbusMasterType.TCP) {
+        if (_tcpclient.containsKey(index)) {
+          // List tempdata = _tcpclient[index].ReadHoldingRegisters(startRegAddr, 1, tuple, out returnEntity);
+          if (returnEntity.status != -16448903 && returnEntity.status != -16448904) {
+            connected = _tcpclient[index]!.isConnected;
+          } else {
+            connected = false;
+          }
+        }
+      }
+      return connected;
+    } catch (ex) {
+      throw Exception("读取连接状态有误：$ex");
+    }
+  }
+
   /// 连接设备
   /// <param name="modbusClient1">RTU公用同串口时使用，传入/传出已连接的对象</param>
   /// <param name="index">设备序列号，从0开始</param>
@@ -114,9 +167,7 @@ class ModbusMaster extends IModbus {
   /// <returns> ReturnEntity </returns>
   // ReturnEntity Connect({required EasyModbus.ModbusClient modbusClient1, required int index, DeviceComInfo? deviceCominfo, required bool reReadFileEnable}) {
   //   ReturnEntity returnEntity = ReturnEntity();
-  //   try {
-  //
-  //   } catch (ex) {
+  //   try {} catch (ex) {
   //     returnEntity.status = -16448948 + index;
   //     // todo
   //     returnEntity.message = ex.toString(); // todo ex.message;
@@ -141,7 +192,7 @@ class ModbusMaster extends IModbus {
         return returnEntity;
       }
       // Excel.CreateWorkbook(toFilePath, 1);//调用FILEIO组件
-
+      toFilePath = returnEntity.data!;
       ModbusClientSerialRtu modbusClient2 = ModbusClientSerialRtu(portName: "COM2", unitId: 1);
 
       // TODO:读取协议文件，并检查协议文件正确性
@@ -197,11 +248,11 @@ class ModbusMaster extends IModbus {
       } else if (list.contains("Modbus-RTU")) {
         _masterType = ModbusMasterType.RTU;
         var dt = excel.tables['Modbus-RTU']!;
-        List<String> com = dt.rows[0][1].toString().split(','); //字符串数据包转存入数组strArray
-        List<String> baudRate = dt.rows[1][1].toString().split(','); //字符串数据包转存入数组strArray
-        List<String> stopBit = dt.rows[2][1].toString().split(','); //字符串数据包转存入数组strArray
-        List<String> paritys = dt.rows[3][1].toString().split(','); //字符串数据包转存入数组strArray
-        List<String> id = dt.rows[4][1].toString().split(','); //字符串数据包转存入数组strArray
+        List<String> com = dt.rows[3][1].toString().split(','); //字符串数据包转存入数组strArray
+        List<String> baudRate = dt.rows[4][1].toString().split(','); //字符串数据包转存入数组strArray
+        List<String> stopBit = dt.rows[5][1].toString().split(','); //字符串数据包转存入数组strArray
+        List<String> paritys = dt.rows[6][1].toString().split(','); //字符串数据包转存入数组strArray
+        List<String> id = dt.rows[7][1].toString().split(','); //字符串数据包转存入数组strArray
 
         for (int i = 0; i < com.length; i++) {
           // SerialPort serialport = new SerialPort();
@@ -211,7 +262,7 @@ class ModbusMaster extends IModbus {
           // serialport.portName = com[i];
           // serialport.baudRate = int.parse(baudRate[i]);
           if (i == 0) {
-            retransmissionsNum = int.parse(dt.rows[5][1].toString());
+            retransmissionsNum = int.parse(dt.rows[8][1].toString());
           }
           // serialport.ReadTimeout = int.parse(dt.rows[6][1].toString());
           // serialport.WriteTimeout = int.parse(dt.rows[6][1].toString());
@@ -245,17 +296,16 @@ class ModbusMaster extends IModbus {
             baudRate: int.parse(baudRate[i]),
             parity: parity,
             stopBits: stopBits,
-            readTimeout: int.parse(dt.rows[6][1].toString()),
-            writeTimeout: int.parse(dt.rows[6][1].toString()),
+            readTimeout: int.parse(dt.rows[9][1].toString()),
+            writeTimeout: int.parse(dt.rows[9][1].toString()),
           );
-          ;
           rtu_unitIdentifier.add(int.parse(id[i]));
           rtuTuple = (int.parse(id[i]), serialport);
           _RtuSet[i] = rtuTuple;
         }
-        cRCType = dt.rows[8][1].toString();
-        dataType = dt.rows[9][1].toString();
-        regType = dt.rows[10][1].toString();
+        cRCType = dt.rows[11][1].toString();
+        dataType = dt.rows[12][1].toString();
+        regType = dt.rows[13][1].toString();
         // if (cRCType.contains("大端")) {
         //   cRCTypeFlag = true;
         // } else {
@@ -326,7 +376,7 @@ class ModbusMaster extends IModbus {
                       excelInfor2 = tempDictionary[j] ?? ExcelInfor();
                       String type = excelInfor2.type;
                       String name = "";
-                      if (excelInfor2.meaning == "") {
+                      if (excelInfor2.meaning == "null") {
                         name = excelInfor2.meaning;
                       } else {
                         name = "${excelInfor2.meaning}_${w + 1}";
@@ -352,71 +402,74 @@ class ModbusMaster extends IModbus {
                 excelInfor.meaning = dt.rows[i][2].toString();
                 excelInfor.min = 0;
                 excelInfor.max = 12;
-                if (dt.rows[i][5]!.value.toString() == "") {
+                if (dt.rows[i][5].toString() == "null") {
                   excelInfor.resolution = "1";
                 } else {
                   excelInfor.resolution = dt.rows[i][5].toString();
                 }
                 excelInfor.type = dt.rows[i][3].toString();
-                if (i > 0 && excelInfor.type == "") {
+                if (i > 0 && excelInfor.type == "null") {
                   if ((dt.rows[i - 1][3].toString().contains("int32") || dt.rows[i - 1][3].toString().contains("float"))) {
-                    _ExcelInfor03[int.parse(dt.rows[i][0]!.value ?? '0')] = excelInfor;
+                    _ExcelInfor03[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
                   } else if (dt.rows[i - 1][3].toString().contains("double") ||
                       dt.rows[i - 2][3].toString().contains("double") ||
                       dt.rows[i - 3][3].toString().contains("double")) {
-                    _ExcelInfor03[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor;
+                    _ExcelInfor03[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
                   } else {
                     returnEntity.status = -16449008 + pagenum;
-                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 3}行_寄存器地址:_${dt.rows[i][0]!.value}"}数据类型有误";
+                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 2}行_寄存器地址:_${dt.rows[i][0]}"}数据类型有误";
                   }
                 } else {
-                  if (((excelInfor.type.contains("int32") || excelInfor.type.contains("float")) &&
-                          (dt.rows[i + 1][2]!.value.toString() == "" && !dt.rows[i + 1][0].toString().contains("重复数据区开始"))) ||
-                      excelInfor.type.contains("int16")) {
-                    _ExcelInfor03[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor;
+                  var ifInt32Orfloat = excelInfor.type.contains("int32") || excelInfor.type.contains("float");
+                  var ifRepeatPart = dt.rows[i + 1][2].toString() == "null" && !dt.rows[i + 1][0].toString().contains("重复数据区开始");
+                  if ((ifInt32Orfloat && ifRepeatPart) || excelInfor.type.contains("int16")) {
+                    _ExcelInfor03[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
                   } else if (excelInfor.type.contains("double") &&
-                      dt.rows[i + 1][2]!.value.toString() == "" &&
-                      dt.rows[i + 2][2]!.value.toString() == "" &&
-                      dt.rows[i + 3][2]!.value.toString() == "") {
-                    _ExcelInfor03[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor;
+                      dt.rows[i + 1][2].toString() == "null" &&
+                      dt.rows[i + 2][2].toString() == "null" &&
+                      dt.rows[i + 3][2].toString() == "null") {
+                    _ExcelInfor03[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
                   } else {
                     returnEntity.status = -16449008 + pagenum;
-                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 3}行_寄存器地址:_${dt.rows[i][0]!.value}"}数据类型有误";
+                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 2}行_寄存器地址:_${dt.rows[i][0]}"}数据类型有误";
                   }
                 }
               }
               if (tempflag) {
                 excelInfor.meaning = dt.rows[i][2].toString();
                 excelInfor.type = dt.rows[i][3].toString();
-                if (dt.rows[i][5]!.value.toString() == "") {
+                if (dt.rows[i][5].toString() == "null") {
                   excelInfor.resolution = "1";
                 } else {
                   excelInfor.resolution = dt.rows[i][5].toString();
                 }
-                if (i > 0 && excelInfor.type == "") {
+                if (rowNum == 194) {
+                  print('----error: ${dt.rows[i][0]}');
+                }
+                if (i > 0 && excelInfor.type == "null") {
                   if (dt.rows[i - 1][3].toString().contains("int32") || dt.rows[i - 1][3].toString().contains("float")) {
-                    tempDictionary[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor;
+                    tempDictionary[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
                   } else if (dt.rows[i - 1][3].toString().contains("double") ||
                       dt.rows[i - 2][3].toString().contains("double") ||
                       dt.rows[i - 3][3].toString().contains("double")) {
-                    tempDictionary[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor;
+                    tempDictionary[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
                   } else {
                     returnEntity.status = -16449008 + pagenum;
-                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 3}行_寄存器地址:_${dt.rows[i][0]!.value}"}数据类型有误";
+                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 2}行_寄存器地址:_${dt.rows[i][0]}"}数据类型有误";
                   }
                 } else {
                   if (((excelInfor.type.contains("int32") || excelInfor.type.contains("float")) &&
-                          (dt.rows[i + 1][2]!.value.toString() == "" && !dt.rows[i + 1][0].toString().contains("重复数据区开始"))) ||
+                          (dt.rows[i + 1][2].toString() == "null" && !dt.rows[i + 1][0].toString().contains("重复数据区开始"))) ||
                       (excelInfor.type.contains("int16"))) {
-                    tempDictionary[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor;
+                    tempDictionary[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
                   } else if (excelInfor.type.contains("double") &&
-                      dt.rows[i + 1][2]!.value.toString() == "" &&
-                      dt.rows[i + 2][2]!.value.toString() == "" &&
-                      dt.rows[i + 3][2]!.value.toString() == "") {
-                    tempDictionary[int.parse((dt.rows[i][0])!.value.toString())] = excelInfor;
+                      dt.rows[i + 1][2].toString() == "null" &&
+                      dt.rows[i + 2][2].toString() == "null" &&
+                      dt.rows[i + 3][2].toString() == "null") {
+                    tempDictionary[int.parse((dt.rows[i][0]).toString())] = excelInfor;
                   } else {
                     returnEntity.status = -16449008 + pagenum;
-                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 3}行_寄存器地址:_${dt.rows[i][0]!.value}"}数据类型有误";
+                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 2}行_寄存器地址:_${dt.rows[i][0]}"}数据类型有误";
                   }
                 }
               }
@@ -431,8 +484,8 @@ class ModbusMaster extends IModbus {
               rowNum = i;
               if (dt.rows[i][0].toString().contains("重复数据区开始")) {
                 tempflag = true;
-                tempNum = int.parse(dt.rows[i][1]!.value.toString());
-                key = int.parse(dt.rows[i + 1][0]!.value.toString());
+                tempNum = int.parse(dt.rows[i][1].toString());
+                key = int.parse(dt.rows[i + 1][0].toString());
                 continue;
               }
               if (dt.rows[i][0].toString().contains("重复数据区结束")) {
@@ -445,7 +498,7 @@ class ModbusMaster extends IModbus {
                       excelInfor2 = tempDictionary[j]!;
                       String type = excelInfor2.type;
                       String name = "";
-                      if (excelInfor2.meaning == "") {
+                      if (excelInfor2.meaning == "null") {
                         name = excelInfor2.meaning;
                       } else {
                         name = "${excelInfor2.meaning}_${w + 1}";
@@ -471,138 +524,138 @@ class ModbusMaster extends IModbus {
               if (dt.rows[i][0].toString() != "" && !dt.rows[i][0].toString().contains("重复数据区开始") && !tempflag) {
                 excelInfor.meaning = dt.rows[i][2].toString();
                 excelInfor.type = dt.rows[i][3].toString();
-                if (dt.rows[i][5]!.value.toString() == "") {
+                if (dt.rows[i][5].toString() == "null") {
                   excelInfor.resolution = "1";
                 } else {
                   excelInfor.resolution = dt.rows[i][5].toString();
                 }
-                if (i > 0 && excelInfor.type == "") {
+                if (i > 0 && excelInfor.type == "null") {
                   if (dt.rows[i - 1][3].toString().contains("int32") || dt.rows[i - 1][3].toString().contains("float")) {
-                    _ExcelInfor03[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor;
+                    _ExcelInfor03[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
                   } else if (dt.rows[i - 1][3].toString().contains("double") ||
                       dt.rows[i - 2][3].toString().contains("double") ||
                       dt.rows[i - 3][3].toString().contains("double")) {
-                    _ExcelInfor03[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor;
+                    _ExcelInfor03[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
                   } else {
                     returnEntity.status = -16449008 + pagenum;
-                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 3}行_寄存器地址:_${dt.rows[i][0]!.value}"}数据类型有误";
+                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 2}行_寄存器地址:_${dt.rows[i][0]}"}数据类型有误";
                   }
                 } else {
-                  if (dt.rows[i][6]!.value.toString() == "") {
-                    if (dt.rows[i][3]!.value.toString() == "int32") {
+                  if (dt.rows[i][6].toString() == "null") {
+                    if (dt.rows[i][3].toString() == "int32") {
                       excelInfor.min = intMinValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == "uint32") {
+                    } else if (dt.rows[i][3].toString() == "uint32") {
                       excelInfor.min = 0;
-                    } else if (dt.rows[i][3]!.value.toString() == "int16") {
+                    } else if (dt.rows[i][3].toString() == "int16") {
                       excelInfor.min = shortMinValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == "uint16") {
+                    } else if (dt.rows[i][3].toString() == "uint16") {
                       excelInfor.min = 0;
-                    } else if (dt.rows[i][3]!.value.toString() == "float") {
+                    } else if (dt.rows[i][3].toString() == "float") {
                       excelInfor.min = floatMinValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == "double") {
+                    } else if (dt.rows[i][3].toString() == "double") {
                       excelInfor.min = doubleMinValue * double.parse(excelInfor.resolution);
                     }
                   } else {
-                    excelInfor.min = double.parse(dt.rows[i][6]!.value.toString());
+                    excelInfor.min = double.parse(dt.rows[i][6].toString());
                   }
-                  if (dt.rows[i][7]!.value.toString() == "") {
-                    if (dt.rows[i][3]!.value.toString() == ("int32")) {
+                  if (dt.rows[i][7].toString() == "null") {
+                    if (dt.rows[i][3].toString() == ("int32")) {
                       excelInfor.max = intMaxValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("uint32")) {
+                    } else if (dt.rows[i][3].toString() == ("uint32")) {
                       excelInfor.max = uint32MaxValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("int16")) {
+                    } else if (dt.rows[i][3].toString() == ("int16")) {
                       excelInfor.max = shortMaxValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("uint16")) {
+                    } else if (dt.rows[i][3].toString() == ("uint16")) {
                       excelInfor.max = uint16MaxValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("float")) {
+                    } else if (dt.rows[i][3].toString() == ("float")) {
                       excelInfor.max = floatMaxValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("double")) {
+                    } else if (dt.rows[i][3].toString() == ("double")) {
                       excelInfor.max = doubleMaxValue * double.parse(excelInfor.resolution);
                     }
                   } else {
-                    excelInfor.max = double.parse(dt.rows[i][7]!.value.toString());
+                    excelInfor.max = double.parse(dt.rows[i][7].toString());
                   }
                   if (((excelInfor.type.contains("int32") || excelInfor.type.contains("float")) &&
-                          (dt.rows[i + 1][2]!.value.toString() == "" && !dt.rows[i + 1][0].toString().contains("重复数据区开始"))) ||
+                          (dt.rows[i + 1][2].toString() == "null" && !dt.rows[i + 1][0].toString().contains("重复数据区开始"))) ||
                       (excelInfor.type.contains("int16"))) {
-                    _ExcelInfor03[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor;
+                    _ExcelInfor03[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
                   } else if (excelInfor.type.contains("double") &&
-                      dt.rows[i + 1][2]!.value.toString() == "" &&
-                      dt.rows[i + 2][2]!.value.toString() == "" &&
-                      dt.rows[i + 3][2]!.value.toString() == "") {
-                    _ExcelInfor03[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor;
+                      dt.rows[i + 1][2].toString() == "null" &&
+                      dt.rows[i + 2][2].toString() == "null" &&
+                      dt.rows[i + 3][2].toString() == "null") {
+                    _ExcelInfor03[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
                   } else {
                     returnEntity.status = -16449008 + pagenum;
-                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 3}行_寄存器地址:_${dt.rows[i][0]!.value}"}数据类型有误";
+                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 2}行_寄存器地址:_${dt.rows[i][0]}"}数据类型有误";
                   }
                 }
               }
               if (tempflag) {
                 excelInfor.meaning = dt.rows[i][2].toString();
                 excelInfor.type = dt.rows[i][3].toString();
-                if (dt.rows[i][5]!.value.toString() == "") {
+                if (dt.rows[i][5].toString() == "null") {
                   excelInfor.resolution = "1";
                 } else {
                   excelInfor.resolution = dt.rows[i][5].toString();
                 }
-                if (i > 0 && excelInfor.type == "") {
+                if (i > 0 && excelInfor.type == "null") {
                   if (dt.rows[i - 1][3].toString().contains("int32") || dt.rows[i - 1][3].toString().contains("float")) {
-                    tempDictionary[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor;
+                    tempDictionary[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
                   } else if (dt.rows[i - 1][3].toString().contains("double") ||
                       dt.rows[i - 2][3].toString().contains("double") ||
                       dt.rows[i - 3][3].toString().contains("double")) {
-                    tempDictionary[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor;
+                    tempDictionary[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
                   } else {
                     returnEntity.status = -16449008 + pagenum;
-                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 3}行_寄存器地址:_${dt.rows[i][0]!.value}"}数据类型有误";
+                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 2}行_寄存器地址:_${dt.rows[i][0]}"}数据类型有误";
                   }
                 } else {
-                  if (dt.rows[i][6]!.value.toString() == "") {
-                    if (dt.rows[i][3]!.value.toString() == ("int32")) {
+                  if (dt.rows[i][6].toString() == "null") {
+                    if (dt.rows[i][3].toString() == ("int32")) {
                       excelInfor.min = intMinValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("uint32")) {
+                    } else if (dt.rows[i][3].toString() == ("uint32")) {
                       excelInfor.min = 0;
-                    } else if (dt.rows[i][3]!.value.toString() == ("int16")) {
+                    } else if (dt.rows[i][3].toString() == ("int16")) {
                       excelInfor.min = shortMinValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("uint16")) {
+                    } else if (dt.rows[i][3].toString() == ("uint16")) {
                       excelInfor.min = 0;
-                    } else if (dt.rows[i][3]!.value.toString() == ("float")) {
+                    } else if (dt.rows[i][3].toString() == ("float")) {
                       excelInfor.min = floatMinValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("double")) {
+                    } else if (dt.rows[i][3].toString() == ("double")) {
                       excelInfor.min = doubleMinValue * double.parse(excelInfor.resolution);
                     }
                   } else {
-                    excelInfor.min = double.parse(dt.rows[i][6]!.value.toString());
+                    excelInfor.min = double.parse(dt.rows[i][6].toString());
                   }
-                  if (dt.rows[i][7]!.value.toString() == "") {
-                    if (dt.rows[i][3]!.value.toString() == ("int32")) {
+                  if (dt.rows[i][7].toString() == "null") {
+                    if (dt.rows[i][3].toString() == ("int32")) {
                       excelInfor.max = intMaxValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("uint32")) {
+                    } else if (dt.rows[i][3].toString() == ("uint32")) {
                       excelInfor.max = uint32MaxValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("int16")) {
+                    } else if (dt.rows[i][3].toString() == ("int16")) {
                       excelInfor.max = shortMaxValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("uint16")) {
+                    } else if (dt.rows[i][3].toString() == ("uint16")) {
                       excelInfor.max = ushortMaxValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("float")) {
+                    } else if (dt.rows[i][3].toString() == ("float")) {
                       excelInfor.max = floatMaxValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("double")) {
+                    } else if (dt.rows[i][3].toString() == ("double")) {
                       excelInfor.max = doubleMaxValue * double.parse(excelInfor.resolution);
                     }
                   } else {
-                    excelInfor.max = double.parse(dt.rows[i][7]!.value.toString());
+                    excelInfor.max = double.parse(dt.rows[i][7].toString());
                   }
                   if (((excelInfor.type.contains("int32") || excelInfor.type.contains("float")) &&
-                          (dt.rows[i + 1][2]!.value.toString() == "" && !dt.rows[i + 1][0].toString().contains("重复数据区开始"))) ||
+                          (dt.rows[i + 1][2].toString() == "null" && !dt.rows[i + 1][0].toString().contains("重复数据区开始"))) ||
                       (excelInfor.type.contains("int16"))) {
-                    tempDictionary[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor;
+                    tempDictionary[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
                   } else if (excelInfor.type.contains("double") &&
-                      dt.rows[i + 1][2]!.value.toString() == "" &&
-                      dt.rows[i + 2][2]!.value.toString() == "" &&
-                      dt.rows[i + 3][2]!.value.toString() == "") {
-                    tempDictionary[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor;
+                      dt.rows[i + 1][2].toString() == "null" &&
+                      dt.rows[i + 2][2].toString() == "null" &&
+                      dt.rows[i + 3][2].toString() == "null") {
+                    tempDictionary[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
                   } else {
                     returnEntity.status = -16449008 + pagenum;
-                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 3}行_寄存器地址:_${dt.rows[i][0]!.value}"}数据类型有误";
+                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 2}行_寄存器地址:_${dt.rows[i][0]}"}数据类型有误";
                   }
                 }
               }
@@ -617,8 +670,8 @@ class ModbusMaster extends IModbus {
               rowNum = i;
               if (dt.rows[i][0].toString().contains("重复数据区开始")) {
                 tempflag = true;
-                tempNum = int.parse(dt.rows[i][1]!.value.toString());
-                key = int.parse(dt.rows[i + 1][0]!.value.toString());
+                tempNum = int.parse(dt.rows[i][1].toString());
+                key = int.parse(dt.rows[i + 1][0].toString());
                 continue;
               }
               if (dt.rows[i][0].toString().contains("重复数据区结束")) {
@@ -631,7 +684,7 @@ class ModbusMaster extends IModbus {
                       excelInfor = tempDictionary[j] ?? ExcelInfor();
                       String type = excelInfor.type;
                       String name = "";
-                      if (excelInfor.meaning == "") {
+                      if (excelInfor.meaning == "null") {
                         name = excelInfor.meaning;
                       } else {
                         name = "${excelInfor.meaning}_${w + 1}";
@@ -654,79 +707,79 @@ class ModbusMaster extends IModbus {
                 tempDictionary.clear();
                 continue;
               }
-              if (dt.rows[i][0]!.value.toString() == "") {
+              if (dt.rows[i][0].toString() == "null") {
                 break;
               } else if (!dt.rows[i][0].toString().contains("重复数据区开始") && !tempflag) {
                 ExcelInfor excelInfor = new ExcelInfor();
                 excelInfor.meaning = dt.rows[i][2].toString();
-                if (dt.rows[i][5]!.value.toString() == "") {
+                if (dt.rows[i][5].toString() == "null") {
                   excelInfor.resolution = "1";
                 } else {
-                  excelInfor.resolution = dt.rows[i][5]!.value.toString();
+                  excelInfor.resolution = dt.rows[i][5].toString();
                 }
                 excelInfor.type = dt.rows[i][3].toString();
-                excelInfor.dafaultVal = dt.rows[i][8]!.value.toString(); //默认值 GP20230807add
-                if (i > 0 && excelInfor.type == "") {
+                excelInfor.dafaultVal = dt.rows[i][8].toString(); //默认值 GP20230807add
+                if (i > 0 && excelInfor.type == "null") {
                   if (dt.rows[i - 1][3].toString().contains("int32") || dt.rows[i - 1][3].toString().contains("float")) {
-                    _ExcelInfor10[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor;
+                    _ExcelInfor10[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
                   } else if (dt.rows[i - 1][3].toString().contains("double") ||
                       dt.rows[i - 2][3].toString().contains("double") ||
                       dt.rows[i - 3][3].toString().contains("double")) {
-                    _ExcelInfor10[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor;
+                    _ExcelInfor10[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
                   } else {
                     returnEntity.status = -16449008 + pagenum;
-                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 3}行_寄存器地址:_${dt.rows[i][0]!.value}"}数据类型有误";
+                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 2}行_寄存器地址:_${dt.rows[i][0]}"}数据类型有误";
                   }
                 } else {
-                  if (dt.rows[i][6]!.value.toString() == "") {
-                    if (dt.rows[i][3]!.value.toString() == ("int32")) {
+                  if (dt.rows[i][6].toString() == "null") {
+                    if (dt.rows[i][3].toString() == ("int32")) {
                       excelInfor.min = intMinValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("uint32")) {
+                    } else if (dt.rows[i][3].toString() == ("uint32")) {
                       excelInfor.min = 0;
-                    } else if (dt.rows[i][3]!.value.toString() == ("int16")) {
+                    } else if (dt.rows[i][3].toString() == ("int16")) {
                       excelInfor.min = shortMinValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("uint16")) {
+                    } else if (dt.rows[i][3].toString() == ("uint16")) {
                       excelInfor.min = 0;
-                    } else if (dt.rows[i][3]!.value.toString() == ("float")) {
+                    } else if (dt.rows[i][3].toString() == ("float")) {
                       excelInfor.min = floatMinValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("double")) {
+                    } else if (dt.rows[i][3].toString() == ("double")) {
                       excelInfor.min = doubleMinValue * double.parse(excelInfor.resolution);
                     }
                   } else {
                     //最小值
-                    excelInfor.min = double.parse(dt.rows[i][6]!.value.toString());
+                    excelInfor.min = double.parse(dt.rows[i][6].toString());
                   }
-                  if (dt.rows[i][7]!.value.toString() == "") {
-                    if (dt.rows[i][3]!.value.toString() == ("int32")) {
+                  if (dt.rows[i][7].toString() == "null") {
+                    if (dt.rows[i][3].toString() == ("int32")) {
                       excelInfor.max = intMaxValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("uint32")) {
+                    } else if (dt.rows[i][3].toString() == ("uint32")) {
                       excelInfor.max = uint32MaxValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("int16")) {
+                    } else if (dt.rows[i][3].toString() == ("int16")) {
                       excelInfor.max = shortMaxValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("uint16")) {
+                    } else if (dt.rows[i][3].toString() == ("uint16")) {
                       excelInfor.max = ushortMaxValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("float")) {
+                    } else if (dt.rows[i][3].toString() == ("float")) {
                       excelInfor.max = floatMaxValue * double.parse(excelInfor.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("double")) {
+                    } else if (dt.rows[i][3].toString() == ("double")) {
                       excelInfor.max = doubleMaxValue * double.parse(excelInfor.resolution);
                     }
                   } else {
                     //最大值
-                    excelInfor.max = double.parse(dt.rows[i][7]!.value.toString());
+                    excelInfor.max = double.parse(dt.rows[i][7].toString());
                   }
 
                   if (((excelInfor.type.contains("int32") || excelInfor.type.contains("float")) &&
-                          (dt.rows[i + 1][2]!.value.toString() == "" && !dt.rows[i + 1][0].toString().contains("重复数据区开始"))) ||
+                          (dt.rows[i + 1][2].toString() == "null" && !dt.rows[i + 1][0].toString().contains("重复数据区开始"))) ||
                       (excelInfor.type.contains("int16"))) {
-                    _ExcelInfor10[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor;
+                    _ExcelInfor10[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
                   } else if (excelInfor.type.contains("double") &&
-                      dt.rows[i + 1][2]!.value.toString() == "" &&
-                      dt.rows[i + 2][2]!.value.toString() == "" &&
-                      dt.rows[i + 3][2]!.value.toString() == "") {
-                    _ExcelInfor10[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor;
+                      dt.rows[i + 1][2].toString() == "null" &&
+                      dt.rows[i + 2][2].toString() == "null" &&
+                      dt.rows[i + 3][2].toString() == "null") {
+                    _ExcelInfor10[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
                   } else {
                     returnEntity.status = -16449008 + pagenum;
-                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 3}行_寄存器地址:_${dt.rows[i][0]!.value}"}数据类型有误";
+                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 2}行_寄存器地址:_${dt.rows[i][0]}"}数据类型有误";
                   }
                 }
               }
@@ -737,70 +790,70 @@ class ModbusMaster extends IModbus {
 
                 excelInfor1.dafaultVal = dt.rows[i][8].toString(); //默认值 GP20230807add
 
-                if (dt.rows[i][5]!.value.toString() == "") {
+                if (dt.rows[i][5].toString() == "null") {
                   excelInfor1.resolution = "1";
                 } else {
                   excelInfor1.resolution = dt.rows[i][5].toString();
                 }
-                if (i > 0 && excelInfor1.type == "") {
+                if (i > 0 && excelInfor1.type == "null") {
                   if (dt.rows[i - 1][3].toString().contains("int32") || dt.rows[i - 1][3].toString().contains("float")) {
-                    tempDictionary[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor1;
+                    tempDictionary[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor1;
                   } else if (dt.rows[i - 1][3].toString().contains("double") ||
                       dt.rows[i - 2][3].toString().contains("double") ||
                       dt.rows[i - 3][3].toString().contains("double")) {
-                    tempDictionary[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor1;
+                    tempDictionary[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor1;
                   } else {
                     returnEntity.status = -16449008 + pagenum;
-                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 3}行_寄存器地址:_${dt.rows[i][0]!.value}"}数据类型有误";
+                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 2}行_寄存器地址:_${dt.rows[i][0]}"}数据类型有误";
                   }
                 } else {
-                  if (dt.rows[i][6]!.value.toString() == "") {
-                    if (dt.rows[i][3]!.value.toString() == ("int32")) {
+                  if (dt.rows[i][6].toString() == "null") {
+                    if (dt.rows[i][3].toString() == ("int32")) {
                       excelInfor1.min = intMinValue * double.parse(excelInfor1.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("uint32")) {
+                    } else if (dt.rows[i][3].toString() == ("uint32")) {
                       excelInfor1.min = 0;
-                    } else if (dt.rows[i][3]!.value.toString() == ("int16")) {
+                    } else if (dt.rows[i][3].toString() == ("int16")) {
                       excelInfor1.min = shortMinValue * double.parse(excelInfor1.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("uint16")) {
+                    } else if (dt.rows[i][3].toString() == ("uint16")) {
                       excelInfor1.min = 0;
-                    } else if (dt.rows[i][3]!.value.toString() == ("float")) {
+                    } else if (dt.rows[i][3].toString() == ("float")) {
                       excelInfor1.min = floatMinValue * double.parse(excelInfor1.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("double")) {
+                    } else if (dt.rows[i][3].toString() == ("double")) {
                       excelInfor1.min = doubleMinValue * double.parse(excelInfor1.resolution);
                     }
                   } else {
-                    excelInfor1.min = double.parse(dt.rows[i][6]!.value.toString());
+                    excelInfor1.min = double.parse(dt.rows[i][6].toString());
                   }
-                  if (dt.rows[i][7]!.value.toString() == "") {
-                    if (dt.rows[i][3]!.value.toString() == ("int32")) {
+                  if (dt.rows[i][7].toString() == "null") {
+                    if (dt.rows[i][3].toString() == ("int32")) {
                       excelInfor1.max = intMaxValue * double.parse(excelInfor1.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("uint32")) {
+                    } else if (dt.rows[i][3].toString() == ("uint32")) {
                       excelInfor1.max = uint32MaxValue * double.parse(excelInfor1.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("int16")) {
+                    } else if (dt.rows[i][3].toString() == ("int16")) {
                       excelInfor1.max = shortMaxValue * double.parse(excelInfor1.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("uint16")) {
+                    } else if (dt.rows[i][3].toString() == ("uint16")) {
                       excelInfor1.max = ushortMaxValue * double.parse(excelInfor1.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("float")) {
+                    } else if (dt.rows[i][3].toString() == ("float")) {
                       excelInfor1.max = floatMaxValue * double.parse(excelInfor1.resolution);
-                    } else if (dt.rows[i][3]!.value.toString() == ("double")) {
+                    } else if (dt.rows[i][3].toString() == ("double")) {
                       excelInfor1.max = doubleMaxValue * double.parse(excelInfor1.resolution);
                     }
                   } else {
-                    excelInfor1.max = double.parse(dt.rows[i][7]!.value.toString());
+                    excelInfor1.max = double.parse(dt.rows[i][7].toString());
                   }
 
                   if (((excelInfor1.type.contains("int32") || excelInfor1.type.contains("float")) &&
-                          (dt.rows[i + 1][2]!.value.toString() == "" && !dt.rows[i + 1][0].toString().contains("重复数据区开始"))) ||
+                          (dt.rows[i + 1][2].toString() == "null" && !dt.rows[i + 1][0].toString().contains("重复数据区开始"))) ||
                       (excelInfor1.type.contains("int16"))) {
-                    tempDictionary[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor1;
+                    tempDictionary[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor1;
                   } else if (excelInfor1.type.contains("double") &&
-                      dt.rows[i + 1][2]!.value.toString() == "" &&
-                      dt.rows[i + 2][2]!.value.toString() == "" &&
-                      dt.rows[i + 3][2]!.value.toString() == "") {
-                    tempDictionary[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor1;
+                      dt.rows[i + 1][2].toString() == "null" &&
+                      dt.rows[i + 2][2].toString() == "null" &&
+                      dt.rows[i + 3][2].toString() == "null") {
+                    tempDictionary[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor1;
                   } else {
                     returnEntity.status = -16449008 + pagenum;
-                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 3}行_寄存器地址:_${dt.rows[i][0]!.value}"}数据类型有误";
+                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 2}行_寄存器地址:_${dt.rows[i][0]}"}数据类型有误";
                   }
                 }
               }
@@ -846,7 +899,7 @@ class ModbusMaster extends IModbus {
             bool tempflag = false;
             // var dt = Excel.ImportToTable(pagenum, 2, 0);
             var dt = excel.tables[pageName]!;
-            for (int i = 0; i < dt.rows.length; i++) {
+            for (int i = 2; i < dt.rows.length; i++) {
               rowNum = i;
               ExcelInfor excelInfor1 = ExcelInfor();
               Map<int, ExcelInfor> _ExcelInforTemp = {};
@@ -860,10 +913,10 @@ class ModbusMaster extends IModbus {
                       excelInfor = tempDictionary[j]!;
                       String type = excelInfor.type;
                       String name = "";
-                      if (excelInfor.meaning == "") {
+                      if (excelInfor.meaning == "null") {
                         name = excelInfor.meaning;
                       } else {
-                        name = excelInfor.meaning + "_" + (w + 1).toString();
+                        name = "${excelInfor.meaning}_${w + 1}";
                       }
                       double max = excelInfor.max;
                       double min = excelInfor.min;
@@ -882,7 +935,7 @@ class ModbusMaster extends IModbus {
                     // _ExcelInforTemp.TryGetValue(w, out excelInfor);
                     excelInfor = _ExcelInforTemp[w]!;
                     String name = excelInfor.meaning;
-                    if (name == "" || name.contains("预留") || name.contains("保留")) {
+                    if (name == "null" || name.contains("预留") || name.contains("保留")) {
                     } else {
                       _ExcelInforName[name] = w;
                     }
@@ -896,37 +949,37 @@ class ModbusMaster extends IModbus {
               if (tempflag) {
                 excelInfor1.meaning = dt.rows[i][2].toString();
                 excelInfor1.type = dt.rows[i][3].toString();
-                if (dt.rows[i][5]!.value.toString() == "") {
+                if (dt.rows[i][5].toString() == "null") {
                   excelInfor1.resolution = "1";
                 } else {
                   excelInfor1.resolution = dt.rows[i][5].toString();
                 }
-                if (i > 0 && excelInfor1.type == "") {
+                if (i > 0 && excelInfor1.type == "null") {
                   if (dt.rows[i - 1][3].toString().contains("int32") || dt.rows[i - 1][3].toString().contains("float")) {
-                    tempDictionary[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor1;
+                    tempDictionary[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor1;
                   } else if (dt.rows[i - 1][3].toString().contains("double") ||
                       dt.rows[i - 2][3].toString().contains("double") ||
                       dt.rows[i - 3][3].toString().contains("double")) {
-                    tempDictionary[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor1;
+                    tempDictionary[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor1;
                   } else {
                     returnEntity.status = -16449008 + pagenum;
-                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 3}行_寄存器地址:_${dt.rows[i][0]!.value}"}数据类型有误";
+                    returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 2}行_寄存器地址:_${dt.rows[i][0]}"}数据类型有误";
                   }
                 } else {
-                  tempDictionary[int.parse(dt.rows[i][0]!.value.toString())] = excelInfor1;
+                  tempDictionary[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor1;
                 }
               }
               if (dt.rows[i][0].toString().contains("重复数据区开始")) {
                 tempflag = true;
-                tempNum = int.parse(dt.rows[i][1]!.value.toString());
-                key = int.parse(dt.rows[i + 1][0]!.value.toString());
+                tempNum = int.parse(dt.rows[i][1].toString());
+                key = int.parse(dt.rows[i + 1][0].toString());
                 continue;
               } else if (!tempflag) {
-                if (dt.rows[i][0]!.value.toString() == "" || dt.rows[i][2].toString().contains("预留") || dt.rows[i][2].toString().contains("保留")) {
+                if (dt.rows[i][0].toString() == "null" || dt.rows[i][2].toString().contains("预留") || dt.rows[i][2].toString().contains("保留")) {
                 } else {
-                  int value = int.parse(dt.rows[i][0]!.value.toString());
+                  int value = int.parse('${dt.rows[i][0] ?? '0'}');
                   if (dt.rows[i][2].toString() != "") {
-                    _ExcelInforName[dt.rows[i][2]!.value.toString()] = value;
+                    _ExcelInforName[dt.rows[i][2].toString()] = value;
                   }
                 }
               }
@@ -941,24 +994,27 @@ class ModbusMaster extends IModbus {
       }
       //加载设备信息页内容
       if (list.contains("设备信息")) {
-        var dt = excel.tables[list.indexOf("设备信息")]!;
+        var dt = excel.tables["设备信息"]!;
         for (int i = 0; i < dt.rows.length; i++) {
           rowNum = i;
+          if (rowNum == 195) {
+            print('error: $rowNum');
+          }
           try {
             if (dt.rows[i][0].toString() != "" && dt.rows[i][0].toString() != "…") {
-              int value1 = int.parse(dt.rows[i][0]!.value.toString());
+              int value1 = int.parse('${dt.rows[i][0] ?? '0'}');
               int value2 = 1;
               if (dt.rows[i].length < 5) {
               } else {
-                value2 = int.parse(dt.rows[i][4]!.value.toString());
+                value2 = int.parse(dt.rows[i][4].toString());
               }
               late (int, int) tempinfoname;
               if (dt.rows[i][1].toString() != "") {
                 tempinfoname = (value1, value2);
-                _ExcelInfor2BName[dt.rows[i][1]!.value.toString()] = tempinfoname;
+                _ExcelInfor2BName[dt.rows[i][1].toString()] = tempinfoname;
               }
             }
-            if (dt.rows[i][0]!.value.toString() == "…") {
+            if (dt.rows[i][0].toString() == "…") {
               break;
             }
           } catch (ex) {
@@ -975,6 +1031,7 @@ class ModbusMaster extends IModbus {
       }
     } catch (ex) {
       // Excel.Close();//解除占用
+      print('----error: ${ex.toString()}');
       Files.DeleteFile(toFilePath);
 
       if (ex.toString().contains("已添加了具有相同键的项") && keyType == 0) {
@@ -986,7 +1043,7 @@ class ModbusMaster extends IModbus {
       } else {
         returnEntity.status = -16449010;
       }
-      returnEntity.message = "协议加载异常：$pageName页${rowNum + 3}行$ex";
+      returnEntity.message = "协议加载异常：$pageName页${rowNum + 1}行$ex";
     }
 
     return returnEntity;

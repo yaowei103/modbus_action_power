@@ -1,66 +1,132 @@
 class ReturnEntity {
-  late int status;
-  late String message;
-  late String data;
+  int? status;
+  String? message;
+  String? data;
+  ReturnEntity({
+    this.status = 0,
+    this.message = '',
+    this.data = '',
+  });
 }
 
 class DeviceComInfo {
-  late int port;
-  late String ip;
-  late String COM;
+  int? port;
+  String? ip;
+  String? COM;
+
+  DeviceComInfo({
+    this.port,
+    this.ip,
+    this.COM,
+  });
 }
 
 class WriteFileInfo {
-  late int fileNum;
-  late int recordNum;
-  late String recordData;
-  int setDatLength = 0;
+  int? fileNum;
+  int? recordNum;
+  String? recordData;
+  int? setDatLength;
+
+  WriteFileInfo({
+    this.fileNum,
+    this.recordNum,
+    this.recordData,
+    this.setDatLength = 0,
+  });
 }
 
 class ReadFileInfo {
-  late int fileNum;
-  late int recordNum;
-  late int recordLength;
+  int? fileNum;
+  int? recordNum;
+  int? recordLength;
+
+  ReadFileInfo({
+    this.fileNum,
+    this.recordNum,
+    this.recordLength,
+  });
 }
 
 class ExcelInfor {
-  late String meaning;
-  late String type;
-  late String unit;
+  String meaning = '';
+  String type = '';
+  String unit = '';
   String resolution = "1";
-  late double min;
-  late double max;
-  late String dafaultVal;
+  double min;
+  double max;
+  String? dafaultVal;
+
+  ExcelInfor({
+    this.meaning = '',
+    this.type = '',
+    this.unit = '',
+    this.resolution = '',
+    this.min = 0,
+    this.max = 0,
+    this.dafaultVal,
+  });
 }
 
 class WriteFileSendInfo {
-  late int fileNum;
-  late int recordNum;
-  late List<int> recordData;
+  int? fileNum;
+  int? recordNum;
+  List<int>? recordData;
+
+  WriteFileSendInfo({
+    this.fileNum,
+    this.recordNum,
+    this.recordData,
+  });
 }
 
 class ReadFileSendInfo {
-  late int fileNum;
-  late int recordNum;
-  late int recordLength;
+  int? fileNum;
+  int? recordNum;
+  int? recordLength;
+
+  ReadFileSendInfo({
+    this.fileNum,
+    this.recordNum,
+    this.recordLength,
+  });
 }
 
 class ReadFileGetInfo {
-  late int fileNum;
-  late int recordNum;
-  late List<int> recordData;
+  int? fileNum;
+  int? recordNum;
+  List<int>? recordData;
+
+  ReadFileGetInfo({
+    this.fileNum,
+    this.recordNum,
+    this.recordData,
+  });
 }
 
 class ReturnRegisterInfo {
-  int readDatNum = 0;
-  int readRegNum = 0;
-  List<String> resolution = [];
-  List<String> type = [];
-  List<int> reabuf03 = [];
-  List<bool> reabuf01 = [];
+  int? readDatNum;
+  int? readRegNum;
+  List<String>? resolution;
+  List<String>? type;
+  List<int>? reabuf03;
+  List<bool>? reabuf01;
+
+  ReturnRegisterInfo({
+    this.readDatNum = 0,
+    this.readRegNum = 0,
+    this.resolution = const [],
+    this.type = const [],
+    this.reabuf03 = const [],
+    this.reabuf01 = const [],
+  });
 }
 
 class ReturnSetRegisterInfo {
-  List<int> reabuf10 = [];
-  List<bool> reabuf0F = [];
+  List<int>? reabuf10;
+  List<bool>? reabuf0F;
+
+  ReturnSetRegisterInfo({
+    this.reabuf10 = const [],
+    this.reabuf0F = const [],
+  });
 }
