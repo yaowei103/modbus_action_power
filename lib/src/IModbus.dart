@@ -1,4 +1,4 @@
-import 'package:modbus_client_serial/modbus_client_serial.dart';
+import '../packages/modbus_client_serial/modbus_client_serial.dart';
 
 import 'ReturnEntity.dart';
 
@@ -35,7 +35,7 @@ abstract class IModbus {
   /// startRegAddr 更新寄存器起始地址
   /// serializableDat 待更新寄存器数据，数据以‘,’分割
   /// SetDatLength 下发数据长度，下发默认值时使用
-  ReturnEntity setRegister({
+  Future<ReturnEntity> setRegister({
     required int index,
     required int startRegAddr,
     required String serializableDat,
@@ -48,7 +48,7 @@ abstract class IModbus {
   /// startRegName 更新寄存器起始含义
   /// serializableDat 待更新寄存器数据，数据以‘,’分割
   /// SetDatLength 下发数据长度，下发默认值时使用
-  ReturnEntity setRegisterByName({
+  Future<ReturnEntity> setRegisterByName({
     required int index,
     required String startRegName,
     required String serializableDat,
@@ -60,7 +60,7 @@ abstract class IModbus {
   /// index 设备地址
   /// startRegAddr 寄存器起始地址
   /// dataCount 读取数据个数
-  ReturnEntity getRegister({
+  Future<ReturnEntity> getRegister({
     required int index,
     required int startRegAddr,
     required int dataCount,
@@ -71,7 +71,7 @@ abstract class IModbus {
   /// index 设备地址
   /// startRegName 首个寄存器名称
   /// dataCount 读取数据个数
-  ReturnEntity getRegisterByName({
+  Future<ReturnEntity> getRegisterByName({
     required int index,
     required String startRegName,
     required int dataCount,

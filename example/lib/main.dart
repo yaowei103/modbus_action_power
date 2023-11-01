@@ -32,14 +32,59 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Center(
-          child: Column(
+          child: Row(
             children: [
-              ElevatedButton(
-                onPressed: () {
-                  initModbus();
-                },
-                child: const Text('init modbus'),
-              )
+              Column(
+                children: [
+                  const Text('program'),
+                  ElevatedButton(
+                    onPressed: () {
+                      initModbus();
+                    },
+                    child: const Text('init modbus'),
+                  ),
+                ],
+              ),
+              const Divider(
+                color: Colors.grey, // 分割线的颜色
+                thickness: 1.0, // 分割线的厚度
+                height: double.infinity,
+              ),
+              Column(
+                children: [
+                  const Text('test'),
+                  ElevatedButton(
+                    onPressed: () {
+                      _modbusActionPowerPlugin.testInit();
+                    },
+                    child: const Text('init modbus'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      _modbusActionPowerPlugin.disConnect();
+                    },
+                    child: const Text('disConnect'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      _modbusActionPowerPlugin.getData();
+                    },
+                    child: const Text('getData'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      _modbusActionPowerPlugin.getDataFloat();
+                    },
+                    child: const Text('getDataFloat'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      _modbusActionPowerPlugin.setData();
+                    },
+                    child: const Text('setData'),
+                  ),
+                ],
+              ),
             ],
           ),
         ),

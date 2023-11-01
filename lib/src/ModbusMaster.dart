@@ -4,8 +4,10 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:modbus_action_power/src/IModbus.dart';
 import 'package:modbus_action_power/src/ReturnEntity.dart';
-import 'package:modbus_client_serial/modbus_client_serial.dart';
 import 'package:spreadsheet_decoder/spreadsheet_decoder.dart';
+import 'package:modbus_action_power/utils/Utils.dart';
+import '../packages/modbus_client/modbus_client.dart';
+import '../packages/modbus_client_serial/modbus_client_serial.dart';
 
 import 'Files.dart';
 
@@ -13,35 +15,27 @@ class ModbusMaster extends IModbus {
   /// 地址为Key值，其他信息为字典的Value
   // 写文件字典信息
   Map<String, ExcelInfor> writefileInfo = {};
-
   // 读文件字典信息
   Map<String, ExcelInfor> readfileInfo = {};
-
   // 03功能码加载信息
   Map<int, ExcelInfor> _ExcelInfor03 = {};
-
   // 06功能码加载信息
   Map<int, ExcelInfor> _ExcelInfor06 = {};
-
   // 10功能码加载信息
   Map<int, ExcelInfor> _ExcelInfor10 = {};
-
   // 01功能码加载信息
   Map<int, ExcelInfor> _ExcelInfor01 = {};
-
   // 05功能码加载信息
   Map<int, ExcelInfor> _ExcelInfor05 = {};
-
   // 04功能码加载信息
   Map<int, ExcelInfor> _ExcelInfor04 = {};
-
   // 0F功能码加载信息
   Map<int, ExcelInfor> _ExcelInfor0F = {};
-
   // 02功能码加载信息
   Map<int, ExcelInfor> _ExcelInfor02 = {};
 
   /// 含义名称加载信息
+  late ModbusClientSerialRtu modbusClientTest;
   Map<String, int> _ExcelInforName = {};
   Map<String, (int, int)> _ExcelInfor2BName = {};
   Map<int, (String, int, int)> _TcpSet = {};
@@ -91,6 +85,41 @@ class ModbusMaster extends IModbus {
 
   static int comIndex = 0;
 
+  /// 重写后新增 start
+  late Map<int, ExcelInfor> excelInfoAll;
+  late ModbusClientSerialRtu modbusClientRtu;
+  String filePath = 'assets/ppmDCModbus2.xlsx';
+
+  Future<ReturnEntity> initMaster() async {
+    var returnEntity = ReturnEntity();
+    var readComFileResult = await readComFileInfo(filePath);
+    if (readComFileResult.status != 0) {
+      return readComFileResult;
+    }
+    modbusClientRtu = ModbusClientSerialRtu(
+      portName: '/dev/${_RtuSet[0]!.$2.portName}', //'ttyS3',
+      unitId: 1,
+      baudRate: SerialBaudRate.b1000000,
+      dataBits: SerialDataBits.bits8,
+      stopBits: SerialStopBits.one,
+      parity: SerialParity.none,
+      flowControl: SerialFlowControl.none,
+      responseTimeout: const Duration(milliseconds: 2000),
+    );
+    modbusClientRtu.connect();
+
+    if (!modbusClientRtu.isConnected) {
+      print('----init error, disConnected-----');
+      returnEntity.status = -1;
+      returnEntity.message = 'init connect error';
+    } else {
+      print('----init success, connected success----');
+    }
+    return returnEntity;
+  }
+
+  /// 重写后新增 end
+
   /// 加载协议
   /// <param name="protocol">协议文件全路径</param>
   @override
@@ -106,74 +135,6 @@ class ModbusMaster extends IModbus {
     ReturnEntity returnEntity = await readComFileInfo1(); //读取协议文件，并检查协议文件正确性
     return returnEntity;
   }
-
-  /// <summary>
-  /// 读取通信连接状态
-  /// </summary>
-  /// <param name="index">通道号</param>
-  /// <returns>返回连接状态</returns>
-  bool getConnected(int index) {
-    try {
-      bool connected = false;
-      int startRegAddr = 0;
-      ReturnEntity returnEntity = ReturnEntity();
-
-      if (_masterType == ModbusMasterType.RTU) {
-        var rtuTuplenow = _RtuSet[index]!;
-        SerialPort serialPortRtunow = rtuTuplenow.$2;
-        int comindex = index;
-        for (int numindex = 0; numindex < _RtuSet.length; numindex++) {
-          if (_client.containsKey(numindex)) {
-            // EasyModbus.ModbusClient modbus_Client;
-            // _client.TryGetValue(numindex, out modbus_Client);
-            var modbus_Client = _client[numindex]!;
-            if (modbus_Client.portName == serialPortRtunow.portName) {
-              comindex = numindex;
-              break;
-            }
-          }
-        }
-        comIndex = comindex;
-
-        if (_client.containsKey(comIndex)) {
-          // List tempdata = _client[comIndex].ReadHoldingRegisters(startRegAddr, 1, tuple, out returnEntity);
-          if (returnEntity.status != -16448903 && returnEntity.status != -16448904) {
-            connected = _client[comIndex]!.isConnected;
-          } else {
-            connected = false;
-          }
-        }
-      } else if (_masterType == ModbusMasterType.TCP) {
-        if (_tcpclient.containsKey(index)) {
-          // List tempdata = _tcpclient[index].ReadHoldingRegisters(startRegAddr, 1, tuple, out returnEntity);
-          if (returnEntity.status != -16448903 && returnEntity.status != -16448904) {
-            connected = _tcpclient[index]!.isConnected;
-          } else {
-            connected = false;
-          }
-        }
-      }
-      return connected;
-    } catch (ex) {
-      throw Exception("读取连接状态有误：$ex");
-    }
-  }
-
-  /// 连接设备
-  /// <param name="modbusClient1">RTU公用同串口时使用，传入/传出已连接的对象</param>
-  /// <param name="index">设备序列号，从0开始</param>
-  /// <param name="deviceCominfo">输入的IP/PORT/COM口信息</param>
-  /// <param name="ReReadFileEnable">重新加载使能</param>
-  /// <returns> ReturnEntity </returns>
-  // ReturnEntity Connect({required EasyModbus.ModbusClient modbusClient1, required int index, DeviceComInfo? deviceCominfo, required bool reReadFileEnable}) {
-  //   ReturnEntity returnEntity = ReturnEntity();
-  //   try {} catch (ex) {
-  //     returnEntity.status = -16448948 + index;
-  //     // todo
-  //     returnEntity.message = ex.toString(); // todo ex.message;
-  //   }
-  //   return returnEntity;
-  // }
 
   //#region 读协议与清除协议字典信息
   int pageNum = 0; //页签索引页，用于故障上报索引
@@ -194,6 +155,7 @@ class ModbusMaster extends IModbus {
       // Excel.CreateWorkbook(toFilePath, 1);//调用FILEIO组件
       toFilePath = returnEntity.data!;
       ModbusClientSerialRtu modbusClient2 = ModbusClientSerialRtu(portName: "COM2", unitId: 1);
+      modbusClientTest = ModbusClientSerialRtu(portName: "COM2", unitId: 1);
 
       // TODO:读取协议文件，并检查协议文件正确性
       // #region
@@ -374,8 +336,8 @@ class ModbusMaster extends IModbus {
                     for (int j = key; j < tempDictionary.keys.length + key; j++) {
                       // tempDictionary.TryGetValue(j, out excelInfor2);
                       excelInfor2 = tempDictionary[j] ?? ExcelInfor();
-                      String type = excelInfor2.type;
-                      String name = "";
+                      String? type = excelInfor2.type;
+                      String? name = "";
                       if (excelInfor2.meaning == "null") {
                         name = excelInfor2.meaning;
                       } else {
@@ -420,11 +382,11 @@ class ModbusMaster extends IModbus {
                     returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 2}行_寄存器地址:_${dt.rows[i][0]}"}数据类型有误";
                   }
                 } else {
-                  var ifInt32Orfloat = excelInfor.type.contains("int32") || excelInfor.type.contains("float");
+                  var ifInt32Orfloat = (excelInfor.type?.contains("int32") ?? false) || (excelInfor.type?.contains("float") ?? false);
                   var ifRepeatPart = dt.rows[i + 1][2].toString() == "null" && !dt.rows[i + 1][0].toString().contains("重复数据区开始");
-                  if ((ifInt32Orfloat && ifRepeatPart) || excelInfor.type.contains("int16")) {
+                  if ((ifInt32Orfloat && ifRepeatPart) || (excelInfor.type?.contains("int16") ?? false)) {
                     _ExcelInfor03[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
-                  } else if (excelInfor.type.contains("double") &&
+                  } else if ((excelInfor.type?.contains("double") ?? false) &&
                       dt.rows[i + 1][2].toString() == "null" &&
                       dt.rows[i + 2][2].toString() == "null" &&
                       dt.rows[i + 3][2].toString() == "null") {
@@ -458,11 +420,11 @@ class ModbusMaster extends IModbus {
                     returnEntity.message = "协议加载失败,${"${list[pagenum]}_${i + 2}行_寄存器地址:_${dt.rows[i][0]}"}数据类型有误";
                   }
                 } else {
-                  if (((excelInfor.type.contains("int32") || excelInfor.type.contains("float")) &&
+                  if ((((excelInfor.type?.contains("int32") ?? false) || (excelInfor.type?.contains("float") ?? false)) &&
                           (dt.rows[i + 1][2].toString() == "null" && !dt.rows[i + 1][0].toString().contains("重复数据区开始"))) ||
-                      (excelInfor.type.contains("int16"))) {
+                      (excelInfor.type?.contains("int16") ?? false)) {
                     tempDictionary[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
-                  } else if (excelInfor.type.contains("double") &&
+                  } else if ((excelInfor.type?.contains("double") ?? false) &&
                       dt.rows[i + 1][2].toString() == "null" &&
                       dt.rows[i + 2][2].toString() == "null" &&
                       dt.rows[i + 3][2].toString() == "null") {
@@ -496,8 +458,8 @@ class ModbusMaster extends IModbus {
                     for (int j = key; j < tempDictionary.keys.length + key; j++) {
                       // tempDictionary.TryGetValue(j, out excelInfor2);
                       excelInfor2 = tempDictionary[j]!;
-                      String type = excelInfor2.type;
-                      String name = "";
+                      String? type = excelInfor2.type;
+                      String? name = "";
                       if (excelInfor2.meaning == "null") {
                         name = excelInfor2.meaning;
                       } else {
@@ -543,43 +505,43 @@ class ModbusMaster extends IModbus {
                 } else {
                   if (dt.rows[i][6].toString() == "null") {
                     if (dt.rows[i][3].toString() == "int32") {
-                      excelInfor.min = intMinValue * double.parse(excelInfor.resolution);
+                      excelInfor.min = intMinValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == "uint32") {
                       excelInfor.min = 0;
                     } else if (dt.rows[i][3].toString() == "int16") {
-                      excelInfor.min = shortMinValue * double.parse(excelInfor.resolution);
+                      excelInfor.min = shortMinValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == "uint16") {
                       excelInfor.min = 0;
                     } else if (dt.rows[i][3].toString() == "float") {
-                      excelInfor.min = floatMinValue * double.parse(excelInfor.resolution);
+                      excelInfor.min = floatMinValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == "double") {
-                      excelInfor.min = doubleMinValue * double.parse(excelInfor.resolution);
+                      excelInfor.min = doubleMinValue * double.parse(excelInfor.resolution!);
                     }
                   } else {
                     excelInfor.min = double.parse(dt.rows[i][6].toString());
                   }
                   if (dt.rows[i][7].toString() == "null") {
                     if (dt.rows[i][3].toString() == ("int32")) {
-                      excelInfor.max = intMaxValue * double.parse(excelInfor.resolution);
+                      excelInfor.max = intMaxValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("uint32")) {
-                      excelInfor.max = uint32MaxValue * double.parse(excelInfor.resolution);
+                      excelInfor.max = uint32MaxValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("int16")) {
-                      excelInfor.max = shortMaxValue * double.parse(excelInfor.resolution);
+                      excelInfor.max = shortMaxValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("uint16")) {
-                      excelInfor.max = uint16MaxValue * double.parse(excelInfor.resolution);
+                      excelInfor.max = uint16MaxValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("float")) {
-                      excelInfor.max = floatMaxValue * double.parse(excelInfor.resolution);
+                      excelInfor.max = floatMaxValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("double")) {
-                      excelInfor.max = doubleMaxValue * double.parse(excelInfor.resolution);
+                      excelInfor.max = doubleMaxValue * double.parse(excelInfor.resolution!);
                     }
                   } else {
                     excelInfor.max = double.parse(dt.rows[i][7].toString());
                   }
-                  if (((excelInfor.type.contains("int32") || excelInfor.type.contains("float")) &&
+                  if ((((excelInfor.type?.contains("int32") ?? false) || (excelInfor.type?.contains("float") ?? false)) &&
                           (dt.rows[i + 1][2].toString() == "null" && !dt.rows[i + 1][0].toString().contains("重复数据区开始"))) ||
-                      (excelInfor.type.contains("int16"))) {
+                      (excelInfor.type?.contains("int16") ?? false)) {
                     _ExcelInfor03[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
-                  } else if (excelInfor.type.contains("double") &&
+                  } else if ((excelInfor.type?.contains("double") ?? false) &&
                       dt.rows[i + 1][2].toString() == "null" &&
                       dt.rows[i + 2][2].toString() == "null" &&
                       dt.rows[i + 3][2].toString() == "null") {
@@ -612,43 +574,43 @@ class ModbusMaster extends IModbus {
                 } else {
                   if (dt.rows[i][6].toString() == "null") {
                     if (dt.rows[i][3].toString() == ("int32")) {
-                      excelInfor.min = intMinValue * double.parse(excelInfor.resolution);
+                      excelInfor.min = intMinValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("uint32")) {
                       excelInfor.min = 0;
                     } else if (dt.rows[i][3].toString() == ("int16")) {
-                      excelInfor.min = shortMinValue * double.parse(excelInfor.resolution);
+                      excelInfor.min = shortMinValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("uint16")) {
                       excelInfor.min = 0;
                     } else if (dt.rows[i][3].toString() == ("float")) {
-                      excelInfor.min = floatMinValue * double.parse(excelInfor.resolution);
+                      excelInfor.min = floatMinValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("double")) {
-                      excelInfor.min = doubleMinValue * double.parse(excelInfor.resolution);
+                      excelInfor.min = doubleMinValue * double.parse(excelInfor.resolution!);
                     }
                   } else {
                     excelInfor.min = double.parse(dt.rows[i][6].toString());
                   }
                   if (dt.rows[i][7].toString() == "null") {
                     if (dt.rows[i][3].toString() == ("int32")) {
-                      excelInfor.max = intMaxValue * double.parse(excelInfor.resolution);
+                      excelInfor.max = intMaxValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("uint32")) {
-                      excelInfor.max = uint32MaxValue * double.parse(excelInfor.resolution);
+                      excelInfor.max = uint32MaxValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("int16")) {
-                      excelInfor.max = shortMaxValue * double.parse(excelInfor.resolution);
+                      excelInfor.max = shortMaxValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("uint16")) {
-                      excelInfor.max = ushortMaxValue * double.parse(excelInfor.resolution);
+                      excelInfor.max = ushortMaxValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("float")) {
-                      excelInfor.max = floatMaxValue * double.parse(excelInfor.resolution);
+                      excelInfor.max = floatMaxValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("double")) {
-                      excelInfor.max = doubleMaxValue * double.parse(excelInfor.resolution);
+                      excelInfor.max = doubleMaxValue * double.parse(excelInfor.resolution!);
                     }
                   } else {
                     excelInfor.max = double.parse(dt.rows[i][7].toString());
                   }
-                  if (((excelInfor.type.contains("int32") || excelInfor.type.contains("float")) &&
+                  if ((((excelInfor.type?.contains("int32") ?? false) || (excelInfor.type?.contains("float") ?? false)) &&
                           (dt.rows[i + 1][2].toString() == "null" && !dt.rows[i + 1][0].toString().contains("重复数据区开始"))) ||
-                      (excelInfor.type.contains("int16"))) {
+                      (excelInfor.type?.contains("int16") ?? false)) {
                     tempDictionary[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
-                  } else if (excelInfor.type.contains("double") &&
+                  } else if ((excelInfor.type?.contains("double") ?? false) &&
                       dt.rows[i + 1][2].toString() == "null" &&
                       dt.rows[i + 2][2].toString() == "null" &&
                       dt.rows[i + 3][2].toString() == "null") {
@@ -682,8 +644,8 @@ class ModbusMaster extends IModbus {
                     for (int j = key; j < tempDictionary.keys.length + key; j++) {
                       // tempDictionary.TryGetValue(j, out excelInfor);
                       excelInfor = tempDictionary[j] ?? ExcelInfor();
-                      String type = excelInfor.type;
-                      String name = "";
+                      String? type = excelInfor.type;
+                      String? name = "";
                       if (excelInfor.meaning == "null") {
                         name = excelInfor.meaning;
                       } else {
@@ -733,17 +695,17 @@ class ModbusMaster extends IModbus {
                 } else {
                   if (dt.rows[i][6].toString() == "null") {
                     if (dt.rows[i][3].toString() == ("int32")) {
-                      excelInfor.min = intMinValue * double.parse(excelInfor.resolution);
+                      excelInfor.min = intMinValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("uint32")) {
                       excelInfor.min = 0;
                     } else if (dt.rows[i][3].toString() == ("int16")) {
-                      excelInfor.min = shortMinValue * double.parse(excelInfor.resolution);
+                      excelInfor.min = shortMinValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("uint16")) {
                       excelInfor.min = 0;
                     } else if (dt.rows[i][3].toString() == ("float")) {
-                      excelInfor.min = floatMinValue * double.parse(excelInfor.resolution);
+                      excelInfor.min = floatMinValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("double")) {
-                      excelInfor.min = doubleMinValue * double.parse(excelInfor.resolution);
+                      excelInfor.min = doubleMinValue * double.parse(excelInfor.resolution!);
                     }
                   } else {
                     //最小值
@@ -751,28 +713,28 @@ class ModbusMaster extends IModbus {
                   }
                   if (dt.rows[i][7].toString() == "null") {
                     if (dt.rows[i][3].toString() == ("int32")) {
-                      excelInfor.max = intMaxValue * double.parse(excelInfor.resolution);
+                      excelInfor.max = intMaxValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("uint32")) {
-                      excelInfor.max = uint32MaxValue * double.parse(excelInfor.resolution);
+                      excelInfor.max = uint32MaxValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("int16")) {
-                      excelInfor.max = shortMaxValue * double.parse(excelInfor.resolution);
+                      excelInfor.max = shortMaxValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("uint16")) {
-                      excelInfor.max = ushortMaxValue * double.parse(excelInfor.resolution);
+                      excelInfor.max = ushortMaxValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("float")) {
-                      excelInfor.max = floatMaxValue * double.parse(excelInfor.resolution);
+                      excelInfor.max = floatMaxValue * double.parse(excelInfor.resolution!);
                     } else if (dt.rows[i][3].toString() == ("double")) {
-                      excelInfor.max = doubleMaxValue * double.parse(excelInfor.resolution);
+                      excelInfor.max = doubleMaxValue * double.parse(excelInfor.resolution!);
                     }
                   } else {
                     //最大值
                     excelInfor.max = double.parse(dt.rows[i][7].toString());
                   }
 
-                  if (((excelInfor.type.contains("int32") || excelInfor.type.contains("float")) &&
+                  if ((((excelInfor.type?.contains("int32") ?? false) || (excelInfor.type?.contains("float") ?? false)) &&
                           (dt.rows[i + 1][2].toString() == "null" && !dt.rows[i + 1][0].toString().contains("重复数据区开始"))) ||
-                      (excelInfor.type.contains("int16"))) {
+                      (excelInfor.type?.contains("int16") ?? false)) {
                     _ExcelInfor10[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor;
-                  } else if (excelInfor.type.contains("double") &&
+                  } else if ((excelInfor.type?.contains("double") ?? false) &&
                       dt.rows[i + 1][2].toString() == "null" &&
                       dt.rows[i + 2][2].toString() == "null" &&
                       dt.rows[i + 3][2].toString() == "null") {
@@ -809,44 +771,44 @@ class ModbusMaster extends IModbus {
                 } else {
                   if (dt.rows[i][6].toString() == "null") {
                     if (dt.rows[i][3].toString() == ("int32")) {
-                      excelInfor1.min = intMinValue * double.parse(excelInfor1.resolution);
+                      excelInfor1.min = intMinValue * double.parse(excelInfor1.resolution!);
                     } else if (dt.rows[i][3].toString() == ("uint32")) {
                       excelInfor1.min = 0;
                     } else if (dt.rows[i][3].toString() == ("int16")) {
-                      excelInfor1.min = shortMinValue * double.parse(excelInfor1.resolution);
+                      excelInfor1.min = shortMinValue * double.parse(excelInfor1.resolution!);
                     } else if (dt.rows[i][3].toString() == ("uint16")) {
                       excelInfor1.min = 0;
                     } else if (dt.rows[i][3].toString() == ("float")) {
-                      excelInfor1.min = floatMinValue * double.parse(excelInfor1.resolution);
+                      excelInfor1.min = floatMinValue * double.parse(excelInfor1.resolution!);
                     } else if (dt.rows[i][3].toString() == ("double")) {
-                      excelInfor1.min = doubleMinValue * double.parse(excelInfor1.resolution);
+                      excelInfor1.min = doubleMinValue * double.parse(excelInfor1.resolution!);
                     }
                   } else {
                     excelInfor1.min = double.parse(dt.rows[i][6].toString());
                   }
                   if (dt.rows[i][7].toString() == "null") {
                     if (dt.rows[i][3].toString() == ("int32")) {
-                      excelInfor1.max = intMaxValue * double.parse(excelInfor1.resolution);
+                      excelInfor1.max = intMaxValue * double.parse(excelInfor1.resolution!);
                     } else if (dt.rows[i][3].toString() == ("uint32")) {
-                      excelInfor1.max = uint32MaxValue * double.parse(excelInfor1.resolution);
+                      excelInfor1.max = uint32MaxValue * double.parse(excelInfor1.resolution!);
                     } else if (dt.rows[i][3].toString() == ("int16")) {
-                      excelInfor1.max = shortMaxValue * double.parse(excelInfor1.resolution);
+                      excelInfor1.max = shortMaxValue * double.parse(excelInfor1.resolution!);
                     } else if (dt.rows[i][3].toString() == ("uint16")) {
-                      excelInfor1.max = ushortMaxValue * double.parse(excelInfor1.resolution);
+                      excelInfor1.max = ushortMaxValue * double.parse(excelInfor1.resolution!);
                     } else if (dt.rows[i][3].toString() == ("float")) {
-                      excelInfor1.max = floatMaxValue * double.parse(excelInfor1.resolution);
+                      excelInfor1.max = floatMaxValue * double.parse(excelInfor1.resolution!);
                     } else if (dt.rows[i][3].toString() == ("double")) {
-                      excelInfor1.max = doubleMaxValue * double.parse(excelInfor1.resolution);
+                      excelInfor1.max = doubleMaxValue * double.parse(excelInfor1.resolution!);
                     }
                   } else {
                     excelInfor1.max = double.parse(dt.rows[i][7].toString());
                   }
 
-                  if (((excelInfor1.type.contains("int32") || excelInfor1.type.contains("float")) &&
+                  if ((((excelInfor1.type?.contains("int32") ?? false) || (excelInfor1.type?.contains("float") ?? false)) &&
                           (dt.rows[i + 1][2].toString() == "null" && !dt.rows[i + 1][0].toString().contains("重复数据区开始"))) ||
-                      (excelInfor1.type.contains("int16"))) {
+                      (excelInfor1.type?.contains("int16") ?? false)) {
                     tempDictionary[int.parse('${dt.rows[i][0] ?? '0'}')] = excelInfor1;
-                  } else if (excelInfor1.type.contains("double") &&
+                  } else if ((excelInfor1.type?.contains("double") ?? false) &&
                       dt.rows[i + 1][2].toString() == "null" &&
                       dt.rows[i + 2][2].toString() == "null" &&
                       dt.rows[i + 3][2].toString() == "null") {
@@ -911,8 +873,8 @@ class ModbusMaster extends IModbus {
                     for (int j = key; j < tempDictionary.keys.length + key; j++) {
                       // tempDictionary.TryGetValue(j, out excelInfor);
                       excelInfor = tempDictionary[j]!;
-                      String type = excelInfor.type;
-                      String name = "";
+                      String? type = excelInfor.type;
+                      String? name = "";
                       if (excelInfor.meaning == "null") {
                         name = excelInfor.meaning;
                       } else {
@@ -934,8 +896,8 @@ class ModbusMaster extends IModbus {
                   for (int w = key; w < _ExcelInforTemp.keys.length + key; w++) {
                     // _ExcelInforTemp.TryGetValue(w, out excelInfor);
                     excelInfor = _ExcelInforTemp[w]!;
-                    String name = excelInfor.meaning;
-                    if (name == "null" || name.contains("预留") || name.contains("保留")) {
+                    String? name = excelInfor.meaning;
+                    if (name == null || name.contains("预留") || name.contains("保留")) {
                     } else {
                       _ExcelInforName[name] = w;
                     }
@@ -1023,7 +985,12 @@ class ModbusMaster extends IModbus {
           }
         }
       }
-      // #endregion
+      // 合并所有excel
+      excelInfoAll = {
+        ..._ExcelInfor03,
+        ..._ExcelInfor06,
+        ..._ExcelInfor10,
+      };
       // Excel.Close();//解除占用
       returnEntity = Files.DeleteFile(toFilePath);
       if (returnEntity.status != 0) {
@@ -1050,25 +1017,52 @@ class ModbusMaster extends IModbus {
   }
 
   @override
-  ReturnEntity getRegister({required int index, required int startRegAddr, required int dataCount}) {
-    // TODO: implement getRegister
-    throw UnimplementedError();
+  Future<ReturnEntity> getRegister({required int index, required int startRegAddr, required int dataCount}) async {
+    var returnEntity = ReturnEntity();
+    List<dynamic?> result = List.generate(dataCount, (index) => null);
+    handleUpdate(val, index) {
+      result[index] = val;
+    }
+
+    getResultVal() async {
+      bool ifGetAllData = !result.contains(null);
+      if (ifGetAllData) {
+        return result;
+      } else {
+        await Future.delayed(const Duration(milliseconds: 5));
+        return getResultVal();
+      }
+    }
+
+    ModbusElementsGroup getRequest = Utils.getElementsGroup(startRegAddr, dataCount, excelInfoAll, handleUpdate);
+
+    if (modbusClientRtu.isConnected && getRequest.isNotEmpty) {
+      modbusClientRtu.send(getRequest.getReadRequest());
+      print('----get done----');
+      var resData = await getResultVal();
+      returnEntity.data = resData?.join(',') ?? '';
+      print('===result:===: $resData');
+    } else {
+      returnEntity.status = -1;
+      returnEntity.message = 'not connected or register element group is empty';
+    }
+    return returnEntity;
   }
 
   @override
-  ReturnEntity getRegisterByName({required int index, required String startRegName, required int dataCount}) {
+  Future<ReturnEntity> getRegisterByName({required int index, required String startRegName, required int dataCount}) {
     // TODO: implement getRegisterByName
     throw UnimplementedError();
   }
 
   @override
-  ReturnEntity setRegister({required int index, required int startRegAddr, required String serializableDat, int setDatLength = 0}) {
+  Future<ReturnEntity> setRegister({required int index, required int startRegAddr, required String serializableDat, int setDatLength = 0}) {
     // TODO: implement setRegister
     throw UnimplementedError();
   }
 
   @override
-  ReturnEntity setRegisterByName({required int index, required String startRegName, required String serializableDat, int setDatLength = 0}) {
+  Future<ReturnEntity> setRegisterByName({required int index, required String startRegName, required String serializableDat, int setDatLength = 0}) {
     // TODO: implement setRegisterByName
     throw UnimplementedError();
   }

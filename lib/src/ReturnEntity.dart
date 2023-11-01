@@ -48,19 +48,19 @@ class ReadFileInfo {
 }
 
 class ExcelInfor {
-  String meaning = '';
-  String type = '';
-  String unit = '';
-  String resolution = "1";
+  String? meaning;
+  String? type;
+  String? unit;
+  String? resolution;
   double min;
   double max;
   String? dafaultVal;
 
   ExcelInfor({
-    this.meaning = '',
-    this.type = '',
-    this.unit = '',
-    this.resolution = '',
+    this.meaning,
+    this.type,
+    this.unit,
+    this.resolution,
     this.min = 0,
     this.max = 0,
     this.dafaultVal,

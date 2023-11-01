@@ -131,6 +131,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_libserialport:
+    dependency: "direct main"
+    description:
+      name: flutter_libserialport
+      sha256: "34cc4909eaa5b1502b9e1ad5a7dc597542f009d9adfa37c9a86ae0fb0d3b13fa"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.3.0"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -225,22 +233,6 @@ packages:
       relative: true
     source: path
     version: "0.0.1"
-  modbus_client:
-    dependency: transitive
-    description:
-      name: modbus_client
-      sha256: "3e38304674505355b094ca717a89f9cde88723eb698f70519cd6b0ffa1f8e623"
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "1.0.3+2"
-  modbus_client_serial:
-    dependency: transitive
-    description:
-      name: modbus_client_serial
-      sha256: "827a733add562bde2f8ee1f3bd9b03137a44c3d1d2e7e0b45ad19aa775628b2f"
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "1.0.1"
   path:
     dependency: transitive
     description:
