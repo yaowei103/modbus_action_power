@@ -1017,9 +1017,13 @@ class ModbusMaster extends IModbus {
   }
 
   @override
-  Future<ReturnEntity> getRegister({required int index, required int startRegAddr, required int dataCount}) async {
+  Future<ReturnEntity> getRegister({required String index, required String startRegAddr, required String dataCount}) async {
     var returnEntity = ReturnEntity();
-    List<ModbusElementsGroup> getRequestList = Utils.getElementsGroup(startRegAddr, dataCount, excelInfoAll);
+    List<Map<String, dynamic>> getRequestList = Utils.getElementsGroup(
+      startRegAddr,
+      excelInfoAll,
+      dataCount: int.parse(dataCount),
+    );
 
     if (modbusClientRtu.isConnected) {
       List resultArr = await retryGetRequest(getRequestList);
@@ -1031,32 +1035,55 @@ class ModbusMaster extends IModbus {
     return returnEntity;
   }
 
-  retryGetRequest(List<ModbusElementsGroup> elementsGroupList, [int? tryTimes]) async {
+  retryGetRequest(List<Map<String, dynamic>> elementsGroupList, [int? tryTimes]) async {
     List resultArr = [];
     int maxTry = tryTimes ?? 0;
     for (int i = 0; i < elementsGroupList.length; i++) {
-      await modbusClientRtu.send(elementsGroupList[i].getReadRequest());
-      resultArr.addAll(elementsGroupList[i].map((item) => item.value));
+      await modbusClientRtu.send(ModbusElementsGroup(elementsGroupList[i]['group']).getReadRequest());
+      resultArr.addAll(ModbusElementsGroup(elementsGroupList[i]['group']).map((item) => item.value));
     }
-    if (resultArr.contains(null) || maxTry < 5) {
+    if (resultArr.contains(null) && maxTry < 5) {
       maxTry += 1;
       resultArr = [];
+      print('------currentReTry------$maxTry');
       return await retryGetRequest(elementsGroupList, maxTry);
     } else {
       return resultArr;
     }
   }
 
-  retrySetRequest(List<ModbusElementsGroup> elementsGroupList, [int? tryTimes]) async {
+  // 0x10
+  retrySetRequest10(List<Map<String, dynamic>> elementsGroupList, String serializableDat, [int? tryTimes]) async {
     List resultArr = [];
     int maxTry = tryTimes ?? 0;
     for (int i = 0; i < elementsGroupList.length; i++) {
-      await modbusClientRtu.send(elementsGroupList[i].getReadRequest());
-      resultArr.addAll(elementsGroupList[i].map((item) => item.value));
+      await modbusClientRtu.send(ModbusElementsGroup(elementsGroupList[i]['group']).getWriteRequest(elementsGroupList[i]['data'], rawValue: true));
+      resultArr.addAll(ModbusElementsGroup(elementsGroupList[i]['group']).map((item) => item.value));
     }
-    if (resultArr.contains(null) || maxTry < 5) {
+    if (resultArr.contains(null) && maxTry < 5) {
       maxTry += 1;
       resultArr = [];
+      print('------currentReTry------$maxTry');
+      return await retryGetRequest(elementsGroupList, maxTry);
+    } else {
+      return resultArr;
+    }
+  }
+
+  // 0x06
+  retrySetRequest06(List<Map<String, dynamic>> elementsGroupList, String serializableDat, [int? tryTimes]) async {
+    List resultArr = [];
+    int maxTry = tryTimes ?? 0;
+    for (int i = 0; i < elementsGroupList.length; i++) {
+      var element = elementsGroupList[i]['group'][0];
+      var data = elementsGroupList[i]['data'][0];
+      await modbusClientRtu.send(element.getWriteRequest(data, rawValue: true));
+      resultArr.add(element.value);
+    }
+    if (resultArr.contains(null) && maxTry < 5) {
+      maxTry += 1;
+      resultArr = [];
+      print('------currentReTry------$maxTry');
       return await retryGetRequest(elementsGroupList, maxTry);
     } else {
       return resultArr;
@@ -1064,20 +1091,26 @@ class ModbusMaster extends IModbus {
   }
 
   @override
-  Future<ReturnEntity> getRegisterByName({required int index, required String startRegName, required int dataCount}) async {
+  Future<ReturnEntity> getRegisterByName({required String index, required String startRegName, required String dataCount}) async {
     ReturnEntity returnEntity = ReturnEntity();
 
     return returnEntity;
   }
 
   @override
-  Future<ReturnEntity> setRegister({required int index, required int startRegAddr, required String serializableDat, int setDatLength = 0}) async {
+  Future<ReturnEntity> setRegister({required String index, required String startRegAddr, required String serializableDat, int setDatLength = 0}) async {
     var returnEntity = ReturnEntity();
-    List serializableDatArr = serializableDat.split(',');
-    List<ModbusElementsGroup> getRequestList = Utils.getElementsGroup(startRegAddr, serializableDatArr.length, excelInfoAll);
+
+    List<String> reqArr = serializableDat.split(',').toList();
+
+    List<Map<String, dynamic>> getRequestList = Utils.getElementsGroup(
+      startRegAddr,
+      excelInfoAll,
+      serializableDat: reqArr,
+    );
 
     if (modbusClientRtu.isConnected) {
-      List resultArr = await retrySetRequest(getRequestList);
+      List resultArr = await (reqArr.length == 1 ? retrySetRequest06(getRequestList, serializableDat) : retrySetRequest10(getRequestList, serializableDat));
       returnEntity.data = resultArr.join(',');
     } else {
       returnEntity.status = -1;
@@ -1086,12 +1119,8 @@ class ModbusMaster extends IModbus {
     return returnEntity;
   }
 
-  set06request() {}
-
-  set10Request() {}
-
   @override
-  Future<ReturnEntity> setRegisterByName({required int index, required String startRegName, required String serializableDat, int setDatLength = 0}) {
+  Future<ReturnEntity> setRegisterByName({required String index, required String startRegName, required String serializableDat, int setDatLength = 0}) {
     // TODO: implement setRegisterByName
     throw UnimplementedError();
   }

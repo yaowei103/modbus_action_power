@@ -56,7 +56,7 @@ class _MyAppState extends State<MyApp> {
                   ElevatedButton(
                     onPressed: () async {
                       final reqStopwatch = Stopwatch()..start();
-                      var res = await _modbusActionPowerPlugin.getData(startRegAddr: 3072, dataCount: 54);
+                      var res = await _modbusActionPowerPlugin.getData(startRegAddr: '3072', dataCount: '54');
                       setState(() {
                         getTime = reqStopwatch.elapsedMilliseconds;
                         getTypeResultData = res;
@@ -67,24 +67,24 @@ class _MyAppState extends State<MyApp> {
                   ElevatedButton(
                     onPressed: () async {
                       final reqStopwatch = Stopwatch()..start();
-                      var res = await _modbusActionPowerPlugin.set06Data(startRegAddr: '3072', serializableDat: '50.5');
+                      var res = await _modbusActionPowerPlugin.setData(startRegAddr: '3072', serializableDat: '50.2');
                       setState(() {
                         setTime = reqStopwatch.elapsedMilliseconds;
-                        setTypeResultData = '$res';
+                        setTypeResultData = res;
                       });
                     },
-                    child: const Text('set06Data'),
+                    child: const Text('setData06'),
                   ),
                   ElevatedButton(
                     onPressed: () async {
                       final reqStopwatch = Stopwatch()..start();
-                      var res = await _modbusActionPowerPlugin.set10Data(startRegAddr: '3072', serializableDat: '50.1,50.2');
+                      var res = await _modbusActionPowerPlugin.setData(startRegAddr: '3072', serializableDat: '50.4,50.5');
                       setState(() {
                         setTime = reqStopwatch.elapsedMilliseconds;
-                        setTypeResultData = '$res';
+                        setTypeResultData = res;
                       });
                     },
-                    child: const Text('set10Data'),
+                    child: const Text('setData10'),
                   ),
                 ],
               ),

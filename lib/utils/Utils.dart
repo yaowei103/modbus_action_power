@@ -1,4 +1,6 @@
 import 'dart:typed_data';
+import 'package:collection/collection.dart';
+
 import '../packages/modbus_client/modbus_client.dart';
 import '../src/ReturnEntity.dart';
 
@@ -58,9 +60,15 @@ class Utils {
     }
   }
 
-  static List<ModbusElementsGroup> getElementsGroup(int startRegAddr, int dataCount, Map<int, ExcelInfor> excelInfoAll) {
-    List<ModbusElementsGroup> arr = [];
-    int currentAddress = startRegAddr;
+  // element 分包
+  static List<Map<String, dynamic>> getElementsGroup(
+    String startRegAddr,
+    Map<int, ExcelInfor> excelInfoAll, {
+    int? dataCount,
+    List<String>? serializableDat,
+  }) {
+    List<Map<String, dynamic>> arr = [];
+    int currentAddress = int.parse(startRegAddr);
 
     Map<String, int> dataTypeMapping = {
       'int16': 1,
@@ -73,6 +81,7 @@ class Utils {
     int allLength = 0;
     int cacheLength = 0;
     List<ModbusElement<dynamic>> cacheArr = [];
+    List<dynamic> cacheDataArr = [];
     do {
       ExcelInfor? excelAddress = excelInfoAll[currentAddress];
       String? excelAddressType = excelInfoAll[currentAddress]?.type;
@@ -133,17 +142,45 @@ class Utils {
             ));
             break;
         }
+        serializableDat != null ? cacheDataArr.add(Utils.transformFrom10ToInt(serializableDat![allLength], type: excelAddressType)) : null;
         cacheLength += dataTypeMapping[excelAddressType]!;
         allLength += 1;
-        if (cacheLength >= 100 || allLength >= dataCount) {
-          arr.add(ModbusElementsGroup(cacheArr));
+        if (cacheLength >= 100 || allLength >= (dataCount ?? -1) || allLength >= (serializableDat?.length ?? -1)) {
+          Iterable<ModbusElement<dynamic>> group = []
+            ..addAll(cacheArr)
+            ..map((item) => item);
+
+          arr.add({
+            'group': group,
+            'data': []
+              ..addAll(cacheDataArr)
+              ..map((item) => item),
+          });
           cacheArr.clear();
+          cacheDataArr.clear();
           cacheLength = 0;
         }
       }
       currentAddress += 1;
-    } while (allLength < dataCount);
+    } while (allLength < (dataCount ?? -1) || allLength < (serializableDat?.length ?? -1));
 
     return arr;
+  }
+
+  // 请求data分包
+  static List<List<dynamic>> getReqDataGroup(String serializableDat, List<ModbusElementsGroup> elementGroupList) {
+    List<List<dynamic>> result = [];
+    List dataArr = serializableDat.split(',').toList();
+
+    int start = 0;
+    int end = elementGroupList[0].length;
+    for (int i = 0; i < elementGroupList.length; i++) {
+      int currentGroupItemLength = elementGroupList[i].length;
+      int nextGroupItemLength = elementGroupList[i + 1].length;
+      result.add(dataArr.sublist(start, end));
+      start = currentGroupItemLength;
+      end = currentGroupItemLength + nextGroupItemLength;
+    }
+    return result;
   }
 }
