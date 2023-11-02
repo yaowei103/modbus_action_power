@@ -1038,6 +1038,7 @@ class ModbusMaster extends IModbus {
   retryGetRequest(List<Map<String, dynamic>> elementsGroupList, [int? tryTimes]) async {
     List resultArr = [];
     int maxTry = tryTimes ?? 0;
+    print('---包数量---${elementsGroupList.length}');
     for (int i = 0; i < elementsGroupList.length; i++) {
       await modbusClientRtu.send(ModbusElementsGroup(elementsGroupList[i]['group']).getReadRequest());
       resultArr.addAll(ModbusElementsGroup(elementsGroupList[i]['group']).map((item) => item.value));
@@ -1056,6 +1057,7 @@ class ModbusMaster extends IModbus {
   retrySetRequest10(List<Map<String, dynamic>> elementsGroupList, String serializableDat, [int? tryTimes]) async {
     List resultArr = [];
     int maxTry = tryTimes ?? 0;
+    print('---包数量---${elementsGroupList.length}');
     for (int i = 0; i < elementsGroupList.length; i++) {
       await modbusClientRtu.send(ModbusElementsGroup(elementsGroupList[i]['group']).getWriteRequest(elementsGroupList[i]['data'], rawValue: true));
       resultArr.addAll(ModbusElementsGroup(elementsGroupList[i]['group']).map((item) => item.value));

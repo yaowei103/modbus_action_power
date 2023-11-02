@@ -145,7 +145,7 @@ class Utils {
         serializableDat != null ? cacheDataArr.add(Utils.transformFrom10ToInt(serializableDat![allLength], type: excelAddressType)) : null;
         cacheLength += dataTypeMapping[excelAddressType]!;
         allLength += 1;
-        if (cacheLength >= 100 || allLength >= (dataCount ?? -1) || allLength >= (serializableDat?.length ?? -1)) {
+        if (cacheLength >= 100 || allLength >= (dataCount ?? double.infinity) || allLength >= (serializableDat?.length ?? double.infinity)) {
           Iterable<ModbusElement<dynamic>> group = []
             ..addAll(cacheArr)
             ..map((item) => item);
