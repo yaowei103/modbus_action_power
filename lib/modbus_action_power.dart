@@ -25,72 +25,27 @@ class ModbusActionPower {
   }
 
   getData() async {
-    ReturnEntity res = await master.getRegister(index: 1, startRegAddr: 304, dataCount: 26);
+    // req_21504_3001
+    ReturnEntity res = await master.getRegister(index: 1, startRegAddr: 3072, dataCount: 54); // 3072_54
     print('=====result=====:${res.data}');
+    return res.data;
   }
 
-  getDataFloat() {
-    var getRequest = ModbusElementsGroup([
-      ModbusInt32Register(
-        name: "BatteryTemperature",
-        type: ModbusElementType.holdingRegister,
-        address: 314,
-        uom: "",
-        multiplier: 1,
-        offset: 0,
-        onUpdate: (self) {
-          // 304_21的正常返回值
-          // 2050.0100098,0.218631,0.4481957,-0.4578384,0.5839773,1.1064787,0,1,187,2000,60,30,3000,0.5,1,2050,63,33,1,1,0
-          var res = Utils.getResponseData(self.value.toInt(), type: 'float');
-          print('---getData 314 response:----${res}');
-        },
-      ),
-      ModbusInt16Register(
-        name: "BatteryTemperature",
-        type: ModbusElementType.holdingRegister,
-        address: 316,
-        uom: "",
-        multiplier: 1,
-        offset: 0,
-        onUpdate: (self) {
-          var res = Utils.getResponseData(self.value.toInt(), type: 'uint16');
-          print('---getData 316 response:----$res');
-        },
-      ),
-      ModbusInt32Register(
-        name: "BatteryTemperature",
-        type: ModbusElementType.holdingRegister, //读写
-        address: 317,
-        uom: "",
-        multiplier: 1,
-        offset: 0,
-        onUpdate: (self) {
-          var res = Utils.getResponseData(self.value.toInt(), type: 'uint32');
-          print('---getData 317 response:----$res');
-        },
-      ),
-    ]);
-    if (modbusClientRtu.isConnected) {
-      modbusClientRtu.send(getRequest.getReadRequest());
-      print('----get done----');
-      print('get multiple response: ${List.from(getRequest)}');
-    } else {
-      print('---not connected');
-    }
-  }
-
-  setData() {
-    ModbusInt16Register setRequest = ModbusInt16Register(
+  setData() async {
+    ModbusInt32Register setRequest = ModbusInt32Register(
       name: "BatteryTemperature",
       type: ModbusElementType.holdingRegister,
-      address: 22,
-      uom: "°C",
+      address: 3072,
+      uom: "",
       multiplier: 1,
+      offset: 0,
       onUpdate: (self) => print('-----setData response---${self}'),
     );
-    if (modbusClientRtu.isConnected) {
-      modbusClientRtu.send(setRequest.getWriteRequest(123, rawValue: true)); //'01 03 02 02 00 01 24 72'
+    if (master.modbusClientRtu.isConnected) {
+      var val = Utils.transformFrom10ToInt(50.512345, type: 'float');
+      await master.modbusClientRtu.send(setRequest.getWriteRequest(val, rawValue: true));
       print('----set done----');
+      return setRequest.value ?? '';
     } else {
       print('---not connected----');
     }

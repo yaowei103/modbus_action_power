@@ -14,7 +14,10 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final _modbusActionPowerPlugin = ModbusActionPower();
-
+  String getTypeResultData = '';
+  int getTime = 0;
+  String setTypeResultData = '';
+  int setTime = 0;
   @override
   void initState() {
     super.initState();
@@ -31,25 +34,10 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Plugin example app'),
         ),
-        body: Center(
+        body: SingleChildScrollView(
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                children: [
-                  const Text('program'),
-                  ElevatedButton(
-                    onPressed: () {
-                      initModbus();
-                    },
-                    child: const Text('init modbus'),
-                  ),
-                ],
-              ),
-              const Divider(
-                color: Colors.grey, // 分割线的颜色
-                thickness: 1.0, // 分割线的厚度
-                height: double.infinity,
-              ),
               Column(
                 children: [
                   const Text('test'),
@@ -66,25 +54,46 @@ class _MyAppState extends State<MyApp> {
                     child: const Text('disConnect'),
                   ),
                   ElevatedButton(
-                    onPressed: () {
-                      _modbusActionPowerPlugin.getData();
+                    onPressed: () async {
+                      final reqStopwatch = Stopwatch()..start();
+                      var res = await _modbusActionPowerPlugin.getData();
+                      setState(() {
+                        getTime = reqStopwatch.elapsedMilliseconds;
+                        getTypeResultData = res;
+                      });
                     },
                     child: const Text('getData'),
                   ),
                   ElevatedButton(
-                    onPressed: () {
-                      _modbusActionPowerPlugin.getDataFloat();
-                    },
-                    child: const Text('getDataFloat'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      _modbusActionPowerPlugin.setData();
+                    onPressed: () async {
+                      final reqStopwatch = Stopwatch()..start();
+                      var res = await _modbusActionPowerPlugin.setData();
+                      setState(() {
+                        setTime = reqStopwatch.elapsedMilliseconds;
+                        setTypeResultData = '$res';
+                      });
                     },
                     child: const Text('setData'),
                   ),
                 ],
               ),
+              Container(
+                width: 400,
+                color: Colors.grey,
+                child: Column(
+                  children: [Text('get 结果: $getTime'), Text(getTypeResultData)],
+                ),
+              ),
+              Container(
+                width: 400,
+                color: Colors.blueGrey,
+                child: Column(
+                  children: [
+                    Text('set 结果：$setTime'),
+                    Text(setTypeResultData),
+                  ],
+                ),
+              )
             ],
           ),
         ),

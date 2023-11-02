@@ -1019,34 +1019,32 @@ class ModbusMaster extends IModbus {
   @override
   Future<ReturnEntity> getRegister({required int index, required int startRegAddr, required int dataCount}) async {
     var returnEntity = ReturnEntity();
-    List<dynamic?> result = List.generate(dataCount, (index) => null);
-    handleUpdate(val, index) {
-      result[index] = val;
-    }
+    List<ModbusElementsGroup> getRequestList = Utils.getElementsGroup(startRegAddr, dataCount, excelInfoAll);
 
-    getResultVal() async {
-      bool ifGetAllData = !result.contains(null);
-      if (ifGetAllData) {
-        return result;
-      } else {
-        await Future.delayed(const Duration(milliseconds: 5));
-        return getResultVal();
-      }
-    }
-
-    ModbusElementsGroup getRequest = Utils.getElementsGroup(startRegAddr, dataCount, excelInfoAll, handleUpdate);
-
-    if (modbusClientRtu.isConnected && getRequest.isNotEmpty) {
-      modbusClientRtu.send(getRequest.getReadRequest());
-      print('----get done----');
-      var resData = await getResultVal();
-      returnEntity.data = resData?.join(',') ?? '';
-      print('===result:===: $resData');
+    if (modbusClientRtu.isConnected) {
+      List resultArr = await retrySend(getRequestList);
+      returnEntity.data = resultArr.join(',');
     } else {
       returnEntity.status = -1;
       returnEntity.message = 'not connected or register element group is empty';
     }
     return returnEntity;
+  }
+
+  retrySend(List<ModbusElementsGroup> elementsGroupList, [int? tryTimes]) async {
+    List resultArr = [];
+    int maxTry = tryTimes ?? 0;
+    for (int i = 0; i < elementsGroupList.length; i++) {
+      await modbusClientRtu.send(elementsGroupList[i].getReadRequest());
+      resultArr.addAll(elementsGroupList[i].map((item) => item.value));
+    }
+    if (resultArr.contains(null) || maxTry < 5) {
+      maxTry += 1;
+      resultArr = [];
+      return await retrySend(elementsGroupList, maxTry);
+    } else {
+      return resultArr;
+    }
   }
 
   @override
@@ -1056,9 +1054,19 @@ class ModbusMaster extends IModbus {
   }
 
   @override
-  Future<ReturnEntity> setRegister({required int index, required int startRegAddr, required String serializableDat, int setDatLength = 0}) {
-    // TODO: implement setRegister
-    throw UnimplementedError();
+  Future<ReturnEntity> setRegister({required int index, required int startRegAddr, required String serializableDat, int setDatLength = 0}) async {
+    var returnEntity = ReturnEntity();
+    List serializableDatArr = serializableDat.split(',');
+    List<ModbusElementsGroup> getRequestList = Utils.getElementsGroup(startRegAddr, serializableDatArr.length, excelInfoAll);
+
+    if (modbusClientRtu.isConnected) {
+      List resultArr = await retrySend(getRequestList);
+      returnEntity.data = resultArr.join(',');
+    } else {
+      returnEntity.status = -1;
+      returnEntity.message = 'not connected or register element group is empty';
+    }
+    return returnEntity;
   }
 
   @override
