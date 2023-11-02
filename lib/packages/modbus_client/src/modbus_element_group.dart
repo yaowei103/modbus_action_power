@@ -70,6 +70,40 @@ class ModbusElementsGroup extends Iterable<ModbusElement> {
     dynamic value, {bool rawValue = false, int? unitId});
 */
 
+  ModbusWriteGroupRequest getWriteRequest(
+    List value, {
+    bool rawValue = false,
+    int? unitId,
+    Duration? responseTimeout,
+  }) {
+    if (length == 0) {
+      throw ModbusException(context: "ModbusElements", msg: "Can not create a request for an empty group!");
+    }
+
+    // value 占用总寄存器个数
+    int allDataLength = _elements.fold(0, (previousValue, element) => (element.byteCount + previousValue).toInt());
+
+    var pdu = Uint8List(allDataLength + 6);
+    var byteData = ByteData.view(pdu.buffer)
+      ..setUint8(0, _type!.writeMultipleFunction!.code)
+      ..setUint16(1, _startAddress)
+      ..setUint16(3, _addressRange)
+      ..setUint8(5, _addressRange * 2);
+    // 写入发送数据
+    int currentIndex = 6;
+    for (int i = 0; i < _elements.length; i++) {
+      int currentByteCount = _elements[i].byteCount;
+      if (currentByteCount == 2) {
+        byteData.setUint16(currentIndex, value[i]);
+        currentIndex += 2;
+      } else if (currentByteCount == 4) {
+        byteData.setUint32(currentIndex, value[i]);
+        currentIndex += 4;
+      }
+    }
+    return ModbusWriteGroupRequest(this, pdu, unitId: unitId, responseTimeout: responseTimeout);
+  }
+
   void add(ModbusElement value) {
     var rollbackElements = _elements.toList();
     _elements.add(value);

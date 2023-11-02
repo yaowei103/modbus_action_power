@@ -24,28 +24,61 @@ class ModbusActionPower {
     print('----disConnect done----');
   }
 
-  getData() async {
+  getData({required int startRegAddr, required int dataCount}) async {
     // req_21504_3001
-    ReturnEntity res = await master.getRegister(index: 1, startRegAddr: 3072, dataCount: 54); // 3072_54
+    ReturnEntity res = await master.getRegister(index: 1, startRegAddr: startRegAddr, dataCount: dataCount); // 3072_54
     print('=====result=====:${res.data}');
     return res.data;
   }
 
-  setData() async {
+  set06Data({required String startRegAddr, required String serializableDat}) async {
     ModbusInt32Register setRequest = ModbusInt32Register(
       name: "BatteryTemperature",
       type: ModbusElementType.holdingRegister,
-      address: 3072,
+      address: int.parse(startRegAddr),
       uom: "",
       multiplier: 1,
       offset: 0,
       onUpdate: (self) => print('-----setData response---${self}'),
     );
     if (master.modbusClientRtu.isConnected) {
-      var val = Utils.transformFrom10ToInt(50.512345, type: 'float');
+      var val = Utils.transformFrom10ToInt(serializableDat, type: 'float'); // 1112145920
       await master.modbusClientRtu.send(setRequest.getWriteRequest(val, rawValue: true));
       print('----set done----');
       return setRequest.value ?? '';
+    } else {
+      print('---not connected----');
+    }
+  }
+
+  set10Data({required String startRegAddr, required String serializableDat}) async {
+    ModbusElementsGroup setRequest = ModbusElementsGroup([
+      ModbusInt32Register(
+        name: "BatteryTemperature",
+        type: ModbusElementType.holdingRegister,
+        address: 3072,
+        uom: "",
+        multiplier: 1,
+        offset: 0,
+        onUpdate: (self) => print('-----setData response---${self}'),
+      ),
+      ModbusInt32Register(
+        name: "BatteryTemperature",
+        type: ModbusElementType.holdingRegister,
+        address: 3074,
+        uom: "",
+        multiplier: 1,
+        offset: 0,
+        onUpdate: (self) => print('-----setData response---${self}'),
+      ),
+    ]);
+
+    if (master.modbusClientRtu.isConnected) {
+      var val = Utils.transformFrom10ToInt('50.1', type: 'float'); // 1112041061
+      var val2 = Utils.transformFrom10ToInt('50.2', type: 'float'); // 1112067277
+      await master.modbusClientRtu.send(setRequest.getWriteRequest([val, val2], rawValue: true));
+      print('----set done----');
+      return 'success';
     } else {
       print('---not connected----');
     }

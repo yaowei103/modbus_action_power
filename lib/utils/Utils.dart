@@ -1,10 +1,5 @@
 import 'dart:typed_data';
-import 'package:collection/collection.dart';
-import 'package:flutter/cupertino.dart';
-
 import '../packages/modbus_client/modbus_client.dart';
-
-import '../src/IModbus.dart';
 import '../src/ReturnEntity.dart';
 
 class Utils {
@@ -38,25 +33,25 @@ class Utils {
   }
 
   // 10进制数字转Int16, Uint16, Uint32, Int32
-  static transformFrom10ToInt(dynamic val, {type}) {
+  static transformFrom10ToInt(String val, {type}) {
     if (type == 'float') {
       // 0x42480000
-      Float32List float32list = Float32List.fromList([val]);
+      Float32List float32list = Float32List.fromList([double.parse(val)]);
       Int32List int32list = Int32List.view(float32list.buffer);
       String hexValue = int32list[0].toRadixString(16);
       return int.parse('0x$hexValue');
     } else if (type == 'uint16') {
-      Uint16List uint16list = Uint16List.fromList([val]);
+      Uint16List uint16list = Uint16List.fromList([int.parse(val)]);
       Uint16List uint16list1 = Uint16List.view(uint16list.buffer);
       String hexValue = uint16list1[0].toRadixString(16);
       return int.parse('0x$hexValue');
     } else if (type == 'int16') {
-      Int16List int16list = Int16List.fromList([val]);
+      Int16List int16list = Int16List.fromList([int.parse(val)]);
       Int16List int16list1 = Int16List.view(int16list.buffer);
       String hexValue = int16list1[0].toRadixString(16);
       return int.parse('0x$hexValue');
     } else if (type == 'uint32') {
-      Uint32List uint32list = Uint32List.fromList([val]);
+      Uint32List uint32list = Uint32List.fromList([int.parse(val)]);
       Uint32List uint32list1 = Uint32List.view(uint32list.buffer);
       String hexValue = uint32list1[0].toRadixString(16);
       return int.parse('0x$hexValue');

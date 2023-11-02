@@ -1022,7 +1022,7 @@ class ModbusMaster extends IModbus {
     List<ModbusElementsGroup> getRequestList = Utils.getElementsGroup(startRegAddr, dataCount, excelInfoAll);
 
     if (modbusClientRtu.isConnected) {
-      List resultArr = await retrySend(getRequestList);
+      List resultArr = await retryGetRequest(getRequestList);
       returnEntity.data = resultArr.join(',');
     } else {
       returnEntity.status = -1;
@@ -1031,7 +1031,7 @@ class ModbusMaster extends IModbus {
     return returnEntity;
   }
 
-  retrySend(List<ModbusElementsGroup> elementsGroupList, [int? tryTimes]) async {
+  retryGetRequest(List<ModbusElementsGroup> elementsGroupList, [int? tryTimes]) async {
     List resultArr = [];
     int maxTry = tryTimes ?? 0;
     for (int i = 0; i < elementsGroupList.length; i++) {
@@ -1041,16 +1041,33 @@ class ModbusMaster extends IModbus {
     if (resultArr.contains(null) || maxTry < 5) {
       maxTry += 1;
       resultArr = [];
-      return await retrySend(elementsGroupList, maxTry);
+      return await retryGetRequest(elementsGroupList, maxTry);
+    } else {
+      return resultArr;
+    }
+  }
+
+  retrySetRequest(List<ModbusElementsGroup> elementsGroupList, [int? tryTimes]) async {
+    List resultArr = [];
+    int maxTry = tryTimes ?? 0;
+    for (int i = 0; i < elementsGroupList.length; i++) {
+      await modbusClientRtu.send(elementsGroupList[i].getReadRequest());
+      resultArr.addAll(elementsGroupList[i].map((item) => item.value));
+    }
+    if (resultArr.contains(null) || maxTry < 5) {
+      maxTry += 1;
+      resultArr = [];
+      return await retryGetRequest(elementsGroupList, maxTry);
     } else {
       return resultArr;
     }
   }
 
   @override
-  Future<ReturnEntity> getRegisterByName({required int index, required String startRegName, required int dataCount}) {
-    // TODO: implement getRegisterByName
-    throw UnimplementedError();
+  Future<ReturnEntity> getRegisterByName({required int index, required String startRegName, required int dataCount}) async {
+    ReturnEntity returnEntity = ReturnEntity();
+
+    return returnEntity;
   }
 
   @override
@@ -1060,7 +1077,7 @@ class ModbusMaster extends IModbus {
     List<ModbusElementsGroup> getRequestList = Utils.getElementsGroup(startRegAddr, serializableDatArr.length, excelInfoAll);
 
     if (modbusClientRtu.isConnected) {
-      List resultArr = await retrySend(getRequestList);
+      List resultArr = await retrySetRequest(getRequestList);
       returnEntity.data = resultArr.join(',');
     } else {
       returnEntity.status = -1;
@@ -1068,6 +1085,10 @@ class ModbusMaster extends IModbus {
     }
     return returnEntity;
   }
+
+  set06request() {}
+
+  set10Request() {}
 
   @override
   Future<ReturnEntity> setRegisterByName({required int index, required String startRegName, required String serializableDat, int setDatLength = 0}) {

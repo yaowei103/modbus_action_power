@@ -174,7 +174,7 @@ class ModbusWriteRequest extends ModbusElementRequest {
 }
 
 /// A write request of an elements group.
-/* TODO: define multiple write "strategy"!
+// TODO: define multiple write "strategy"!
 class ModbusWriteGroupRequest extends ModbusElementRequest {
   // Request PDU
   // -----------
@@ -191,12 +191,25 @@ class ModbusWriteGroupRequest extends ModbusElementRequest {
   // WORD - Register Count
 
   final ModbusElementsGroup elementGroup;
-  ModbusWriteGroupRequest(this.elementGroup, super.protocolDataUnit, [super.unitId]);
+  ModbusWriteGroupRequest(this.elementGroup, super.protocolDataUnit, {super.unitId, super.responseTimeout});
 
   @override
   int get responsePduLength => 5;
 
   @override
-  void internalSetElementData(Uint8List data);
+  void internalSetElementData(Uint8List data) {
+    for (var register in elementGroup) {
+      if (register.type.isRegister) {
+        var startIndex = (register.address - elementGroup.startAddress) * 2;
+        register.setValueFromBytes(data.sublist(startIndex, startIndex + (register.byteCount)));
+      }
+      if (register.type.isBit) {
+        var byteIndex = (register.address - elementGroup.startAddress) ~/ 8;
+        var bitIndex = (register.address - elementGroup.startAddress) % 8;
+        var byteValue = ByteData.view(data.buffer).getUint8(byteIndex);
+        var bitValue = (byteValue >> bitIndex) & 0x01;
+        register.value = bitValue;
+      }
+    }
+  }
 }
-*/
