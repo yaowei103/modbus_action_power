@@ -1,7 +1,5 @@
 import 'package:modbus_action_power/src/ModbusMaster.dart';
-import 'package:modbus_action_power/src/ReturnEntity.dart';
-import 'package:modbus_action_power/utils/Utils.dart';
-import './packages/modbus_client/modbus_client.dart';
+import 'package:modbus_action_power/entity/ReturnEntity.dart';
 import './packages/modbus_client_serial/modbus_client_serial.dart';
 
 class ModbusActionPower {

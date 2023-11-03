@@ -2,10 +2,10 @@ import 'dart:typed_data';
 import 'package:collection/collection.dart';
 
 import '../packages/modbus_client/modbus_client.dart';
-import '../src/ReturnEntity.dart';
+import '../entity/ReturnEntity.dart';
 
 class Utils {
-  // Int16, Uint16, Uint32, Int32 转 10进制数字
+  // Int16, Uint16, Uint32, Int32 的16进制 转 10进制数字
   static getResponseData(int val, {type}) {
     if (type == 'float') {
       Int8List bytes = Int8List(4); // 创建一个长度为4的字节列表
@@ -34,7 +34,7 @@ class Utils {
     }
   }
 
-  // 10进制数字转Int16, Uint16, Uint32, Int32
+  // 10进制数字转Int16, Uint16, Uint32, Int32 的16进制
   static transformFrom10ToInt(String val, {type}) {
     if (type == 'float') {
       // 0x42480000
@@ -165,22 +165,5 @@ class Utils {
     } while (allLength < (dataCount ?? -1) || allLength < (serializableDat?.length ?? -1));
 
     return arr;
-  }
-
-  // 请求data分包
-  static List<List<dynamic>> getReqDataGroup(String serializableDat, List<ModbusElementsGroup> elementGroupList) {
-    List<List<dynamic>> result = [];
-    List dataArr = serializableDat.split(',').toList();
-
-    int start = 0;
-    int end = elementGroupList[0].length;
-    for (int i = 0; i < elementGroupList.length; i++) {
-      int currentGroupItemLength = elementGroupList[i].length;
-      int nextGroupItemLength = elementGroupList[i + 1].length;
-      result.add(dataArr.sublist(start, end));
-      start = currentGroupItemLength;
-      end = currentGroupItemLength + nextGroupItemLength;
-    }
-    return result;
   }
 }

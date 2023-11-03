@@ -73,7 +73,7 @@ class _MyAppState extends State<MyApp> {
                         setTypeResultData = res;
                       });
                     },
-                    child: const Text('setData06'),
+                    child: const Text('setData-single'),
                   ),
                   ElevatedButton(
                     onPressed: () async {
@@ -84,7 +84,7 @@ class _MyAppState extends State<MyApp> {
                         setTypeResultData = res;
                       });
                     },
-                    child: const Text('setData10'),
+                    child: const Text('setData-multiple'),
                   ),
                 ],
               ),

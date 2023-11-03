@@ -3,9 +3,10 @@ import 'dart:io';
 // import 'package:excel/excel.dart';
 import 'package:intl/intl.dart';
 import 'package:modbus_action_power/src/IModbus.dart';
-import 'package:modbus_action_power/src/ReturnEntity.dart';
+import 'package:modbus_action_power/entity/ReturnEntity.dart';
 import 'package:spreadsheet_decoder/spreadsheet_decoder.dart';
 import 'package:modbus_action_power/utils/Utils.dart';
+import '../entity/InfoRTU.dart';
 import '../packages/modbus_client/modbus_client.dart';
 import '../packages/modbus_client_serial/modbus_client_serial.dart';
 
@@ -86,6 +87,7 @@ class ModbusMaster extends IModbus {
   static int comIndex = 0;
 
   /// 重写后新增 start
+  late InfoRTU infoRTU;
   late Map<int, ExcelInfor> excelInfoAll;
   late ModbusClientSerialRtu modbusClientRtu;
   String filePath = 'assets/ppmDCModbus2.xlsx';
@@ -97,14 +99,14 @@ class ModbusMaster extends IModbus {
       return readComFileResult;
     }
     modbusClientRtu = ModbusClientSerialRtu(
-      portName: '/dev/${_RtuSet[0]!.$2.portName}', //'ttyS3',
+      portName: '/dev/${infoRTU.portNames[0]}', //'ttyS3',
       unitId: 1,
-      baudRate: SerialBaudRate.b1000000,
+      baudRate: infoRTU.baudRates[0],
       dataBits: SerialDataBits.bits8,
-      stopBits: SerialStopBits.one,
-      parity: SerialParity.none,
+      stopBits: infoRTU.stopBits[0],
+      parity: infoRTU.parities[0],
       flowControl: SerialFlowControl.none,
-      responseTimeout: const Duration(milliseconds: 2000),
+      responseTimeout: Duration(milliseconds: int.parse(infoRTU.timeout)),
     );
     modbusClientRtu.connect();
 
@@ -114,6 +116,7 @@ class ModbusMaster extends IModbus {
       returnEntity.message = 'init connect error';
     } else {
       print('----init success, connected success----');
+      returnEntity.message = 'connect success';
     }
     return returnEntity;
   }
@@ -154,11 +157,8 @@ class ModbusMaster extends IModbus {
       }
       // Excel.CreateWorkbook(toFilePath, 1);//调用FILEIO组件
       toFilePath = returnEntity.data!;
-      ModbusClientSerialRtu modbusClient2 = ModbusClientSerialRtu(portName: "COM2", unitId: 1);
-      modbusClientTest = ModbusClientSerialRtu(portName: "COM2", unitId: 1);
 
       // TODO:读取协议文件，并检查协议文件正确性
-      // #region
       var bytes = File(toFilePath).readAsBytesSync();
       var excel = SpreadsheetDecoder.decodeBytes(bytes);
       List<String> list = excel.tables.keys.toList(); //获取协议所有页签
@@ -208,85 +208,9 @@ class ModbusMaster extends IModbus {
         // }
         // tuple = new Tuple<bool, bool, bool>(CRCTypeFlag, DataTypeFlag, RegTypeFlag);
       } else if (list.contains("Modbus-RTU")) {
+        SpreadsheetTable dt = excel.tables['Modbus-RTU']!;
         _masterType = ModbusMasterType.RTU;
-        var dt = excel.tables['Modbus-RTU']!;
-        List<String> com = dt.rows[3][1].toString().split(','); //字符串数据包转存入数组strArray
-        List<String> baudRate = dt.rows[4][1].toString().split(','); //字符串数据包转存入数组strArray
-        List<String> stopBit = dt.rows[5][1].toString().split(','); //字符串数据包转存入数组strArray
-        List<String> paritys = dt.rows[6][1].toString().split(','); //字符串数据包转存入数组strArray
-        List<String> id = dt.rows[7][1].toString().split(','); //字符串数据包转存入数组strArray
-
-        for (int i = 0; i < com.length; i++) {
-          // SerialPort serialport = new SerialPort();
-          SerialStopBits stopBits = SerialStopBits.one;
-          SerialParity parity = SerialParity.even;
-          late (int, SerialPort) rtuTuple;
-          // serialport.portName = com[i];
-          // serialport.baudRate = int.parse(baudRate[i]);
-          if (i == 0) {
-            retransmissionsNum = int.parse(dt.rows[8][1].toString());
-          }
-          // serialport.ReadTimeout = int.parse(dt.rows[6][1].toString());
-          // serialport.WriteTimeout = int.parse(dt.rows[6][1].toString());
-          int stopBittemp = int.parse(stopBit[i]);
-
-          switch (stopBittemp) {
-            case 1:
-              stopBits = SerialStopBits.one;
-              break;
-            case 2:
-              stopBits = SerialStopBits.two;
-              break;
-            case 0:
-              stopBits = SerialStopBits.none;
-              break;
-          }
-          int parityTemp = int.parse(paritys[i]);
-          switch (parityTemp) {
-            case 1:
-              parity = SerialParity.odd;
-              break;
-            case 2:
-              parity = SerialParity.even;
-              break;
-            case 0:
-              parity = SerialParity.none;
-              break;
-          }
-          SerialPort serialport = SerialPort(
-            portName: com[i],
-            baudRate: int.parse(baudRate[i]),
-            parity: parity,
-            stopBits: stopBits,
-            readTimeout: int.parse(dt.rows[9][1].toString()),
-            writeTimeout: int.parse(dt.rows[9][1].toString()),
-          );
-          rtu_unitIdentifier.add(int.parse(id[i]));
-          rtuTuple = (int.parse(id[i]), serialport);
-          _RtuSet[i] = rtuTuple;
-        }
-        cRCType = dt.rows[11][1].toString();
-        dataType = dt.rows[12][1].toString();
-        regType = dt.rows[13][1].toString();
-        // if (cRCType.contains("大端")) {
-        //   cRCTypeFlag = true;
-        // } else {
-        //   cRCTypeFlag = false;
-        // }
-        cRCTypeFlag = cRCType.contains("大端");
-        // if (dataType.contains("小端")) {
-        //   dataTypeFlag = true;
-        // } else {
-        //   dataTypeFlag = false;
-        // }
-        dataTypeFlag = dataType.contains("小端");
-        // if (regType.contains("小端")) {
-        //   regTypeFlag = true;
-        // } else {
-        //   regTypeFlag = false;
-        // }
-        regTypeFlag = regType.contains("小端");
-        tuple = (cRCTypeFlag, dataTypeFlag, regTypeFlag);
+        infoRTU = InfoRTU.fromDataTable(dt);
       }
       //int[] ErrorCode = { -16449008, -16449007 };
       //将各个sheet数据加载到对应字典中，key为地址
@@ -1027,7 +951,7 @@ class ModbusMaster extends IModbus {
 
     if (modbusClientRtu.isConnected) {
       List resultArr = await retryGetRequest(getRequestList);
-      returnEntity.data = resultArr.join(',');
+      returnEntity = handleResponse(resultArr);
     } else {
       returnEntity.status = -1;
       returnEntity.message = 'not connected or register element group is empty';
@@ -1035,6 +959,42 @@ class ModbusMaster extends IModbus {
     return returnEntity;
   }
 
+  @override
+  Future<ReturnEntity> getRegisterByName({required String index, required String startRegName, required String dataCount}) async {
+    ReturnEntity returnEntity = ReturnEntity();
+
+    return returnEntity;
+  }
+
+  @override
+  Future<ReturnEntity> setRegister({required String index, required String startRegAddr, required String serializableDat, int setDatLength = 0}) async {
+    var returnEntity = ReturnEntity();
+
+    List<String> reqArr = serializableDat.split(',').toList();
+
+    List<Map<String, dynamic>> getRequestList = Utils.getElementsGroup(
+      startRegAddr,
+      excelInfoAll,
+      serializableDat: reqArr,
+    );
+
+    if (modbusClientRtu.isConnected) {
+      List resultArr = await (reqArr.length == 1 ? retrySetRequest06(getRequestList, serializableDat) : retrySetRequest10(getRequestList, serializableDat));
+      returnEntity = handleResponse(resultArr);
+    } else {
+      returnEntity.status = -1;
+      returnEntity.message = 'not connected or register element group is empty';
+    }
+    return returnEntity;
+  }
+
+  @override
+  Future<ReturnEntity> setRegisterByName({required String index, required String startRegName, required String serializableDat, int setDatLength = 0}) {
+    // TODO: implement setRegisterByName
+    throw UnimplementedError();
+  }
+
+  // 0x03
   retryGetRequest(List<Map<String, dynamic>> elementsGroupList, [int? tryTimes]) async {
     List resultArr = [];
     int maxTry = tryTimes ?? 0;
@@ -1076,12 +1036,12 @@ class ModbusMaster extends IModbus {
   retrySetRequest06(List<Map<String, dynamic>> elementsGroupList, String serializableDat, [int? tryTimes]) async {
     List resultArr = [];
     int maxTry = tryTimes ?? 0;
-    for (int i = 0; i < elementsGroupList.length; i++) {
-      var element = elementsGroupList[i]['group'][0];
-      var data = elementsGroupList[i]['data'][0];
-      await modbusClientRtu.send(element.getWriteRequest(data, rawValue: true));
-      resultArr.add(element.value);
-    }
+    // 0x06只有一个element，不需要循环
+    var element = elementsGroupList[0]['group'][0];
+    var data = elementsGroupList[0]['data'][0];
+    await modbusClientRtu.send(element.getWriteRequest(data, rawValue: true));
+    resultArr.add(element.value);
+
     if (resultArr.contains(null) && maxTry < 5) {
       maxTry += 1;
       resultArr = [];
@@ -1092,38 +1052,16 @@ class ModbusMaster extends IModbus {
     }
   }
 
-  @override
-  Future<ReturnEntity> getRegisterByName({required String index, required String startRegName, required String dataCount}) async {
-    ReturnEntity returnEntity = ReturnEntity();
-
-    return returnEntity;
-  }
-
-  @override
-  Future<ReturnEntity> setRegister({required String index, required String startRegAddr, required String serializableDat, int setDatLength = 0}) async {
+  // 处理返回的数据arr
+  ReturnEntity handleResponse(List resArr) {
     var returnEntity = ReturnEntity();
-
-    List<String> reqArr = serializableDat.split(',').toList();
-
-    List<Map<String, dynamic>> getRequestList = Utils.getElementsGroup(
-      startRegAddr,
-      excelInfoAll,
-      serializableDat: reqArr,
-    );
-
-    if (modbusClientRtu.isConnected) {
-      List resultArr = await (reqArr.length == 1 ? retrySetRequest06(getRequestList, serializableDat) : retrySetRequest10(getRequestList, serializableDat));
-      returnEntity.data = resultArr.join(',');
-    } else {
+    if (resArr.isEmpty) {
       returnEntity.status = -1;
-      returnEntity.message = 'not connected or register element group is empty';
+      returnEntity.message = 'No modbus Slave';
+      returnEntity.data = '';
+    } else {
+      returnEntity.data = resArr.join(',');
     }
     return returnEntity;
-  }
-
-  @override
-  Future<ReturnEntity> setRegisterByName({required String index, required String startRegName, required String serializableDat, int setDatLength = 0}) {
-    // TODO: implement setRegisterByName
-    throw UnimplementedError();
   }
 }

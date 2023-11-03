@@ -1,6 +1,6 @@
 import '../packages/modbus_client_serial/modbus_client_serial.dart';
 
-import 'ReturnEntity.dart';
+import '../entity/ReturnEntity.dart';
 
 enum ModbusMasterType {
   RTU,

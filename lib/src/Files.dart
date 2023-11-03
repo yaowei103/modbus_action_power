@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'ReturnEntity.dart';
+import '../entity/ReturnEntity.dart';
 
 class Files {
   static Future<ReturnEntity> copyFileToLocal(String fromFilePath, String toFilePath) async {
@@ -23,11 +23,11 @@ class Files {
         return returnEntity;
       }
       returnEntity.status = -16449012;
-      returnEntity.message = "源文件不存在，文件路径：" + fromFilePath;
+      returnEntity.message = "源文件不存在，文件路径：$fromFilePath";
       return returnEntity;
     } catch (ex) {
       returnEntity.status = -16449011;
-      returnEntity.message = "协议备份失败:" + ex.toString();
+      returnEntity.message = "协议备份失败:$ex";
       return returnEntity;
     }
   }
@@ -48,11 +48,11 @@ class Files {
         return returnEntity;
       }
       returnEntity.status = -16449012;
-      returnEntity.message = "源文件不存在，文件路径：" + fromFilePath;
+      returnEntity.message = "源文件不存在，文件路径：$fromFilePath";
       return returnEntity;
     } catch (ex) {
       returnEntity.status = -16449011;
-      returnEntity.message = "协议备份失败:" + ex.toString();
+      returnEntity.message = "协议备份失败:$ex";
       return returnEntity;
     }
   }
