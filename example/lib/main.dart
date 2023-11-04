@@ -18,12 +18,10 @@ class _MyAppState extends State<MyApp> {
   int getTime = 0;
   String setTypeResultData = '';
   int setTime = 0;
+
   @override
   void initState() {
     super.initState();
-  }
-
-  initModbus() {
     _modbusActionPowerPlugin.initModbus();
   }
 
@@ -43,7 +41,7 @@ class _MyAppState extends State<MyApp> {
                   const Text('test'),
                   ElevatedButton(
                     onPressed: () {
-                      _modbusActionPowerPlugin.testInit();
+                      _modbusActionPowerPlugin.initModbus();
                     },
                     child: const Text('init modbus'),
                   ),

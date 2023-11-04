@@ -39,7 +39,7 @@ class ModbusMaster extends IModbus {
   // 配置信息sheets
   List<String> configSheetNames = ["Modbus-TCP", "Modbus-RTU", "TCP通讯设置", "RTU通讯设置", "大小端配置", "设备信息"];
 
-  Future<ReturnEntity> initMaster() async {
+  Future<ReturnEntity> initMaster(String filePath) async {
     var returnEntity = ReturnEntity();
     var readComFileResult = await readComFileInfo(filePath);
     if (readComFileResult.status != 0) {

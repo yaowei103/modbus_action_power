@@ -7,14 +7,9 @@ class ModbusActionPower {
   String filePath = 'assets/ppmDCModbus2.xlsx';
   late ModbusClientSerialRtu modbusClientRtu;
 
-  void initModbus() {
+  initModbus() async {
     master = ModbusMaster();
-    master.readComFileInfo(filePath);
-  }
-
-  testInit() async {
-    master = ModbusMaster();
-    await master.initMaster();
+    await master.initMaster(filePath);
   }
 
   disConnect() {
