@@ -362,6 +362,8 @@ class ModbusMaster extends IModbus {
       resultArr = [];
       print('------currentReTry------$maxTry');
       return await retryGetRequest(elementsGroupList, maxTry);
+    } else if (resultArr.contains(null) && maxTry >= 5) {
+      return [];
     } else {
       return resultArr;
     }
@@ -381,6 +383,8 @@ class ModbusMaster extends IModbus {
       resultArr = [];
       print('------currentReTry------$maxTry');
       return await retryGetRequest(elementsGroupList, maxTry);
+    } else if (resultArr.contains(null) && maxTry >= 5) {
+      return [];
     } else {
       return resultArr;
     }
