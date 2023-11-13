@@ -21,6 +21,7 @@ abstract class ModbusClientSerial extends ModbusClient {
   final SerialFlowControl flowControl;
 
   SerialPort? _serialPort;
+  SerialPort? serialPort;
   SerialPortConfig? _serialConfig;
   final Lock _lock = Lock();
 
@@ -151,6 +152,7 @@ abstract class ModbusClientSerial extends ModbusClient {
     ModbusAppLogger.fine("Opening serial port $portName...");
     // New connection
     _serialPort = SerialPort(portName);
+    serialPort = _serialPort;
     if (!_serialPort!.openReadWrite()) {
       _serialPort!.dispose();
       return false;

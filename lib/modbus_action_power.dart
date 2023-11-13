@@ -10,6 +10,7 @@ class ModbusActionPower {
   initModbus() async {
     master = ModbusMaster();
     await master.initMaster(filePath);
+    print('init success');
   }
 
   disConnect() {
@@ -26,7 +27,8 @@ class ModbusActionPower {
     ReturnEntity res = await master.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount); // 3072_54
     print('=====get result=====:${res.data}');
     if (res.status != 0) {
-      print(res.message);
+      print(res.toString());
+      return '';
     }
     return res.data;
   }
@@ -35,7 +37,18 @@ class ModbusActionPower {
     ReturnEntity res = await master.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat); // 3072_54
     print('=====set result=====:${res.data}');
     if (res.status != 0) {
-      print(res.message);
+      print(res.toString());
+      return '';
+    }
+    return res.data;
+  }
+
+  get2bData({required String objectName}) async {
+    ReturnEntity res = await master.get2bRegister(objectName: objectName); // 3072_54
+    print('=====get 2b result=====:${res.data}');
+    if (res.status != 0) {
+      print(res.toString());
+      return '';
     }
     return res.data;
   }

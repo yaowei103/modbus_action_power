@@ -1,11 +1,11 @@
 class ReturnEntity {
   int? status;
   String? message;
-  String? data;
+  dynamic data;
   ReturnEntity({
     this.status = 0,
     this.message = '',
-    this.data = '',
+    this.data,
   });
 }
 

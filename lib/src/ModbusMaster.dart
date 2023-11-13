@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 // import 'package:excel/excel.dart';
 import 'package:intl/intl.dart';
@@ -34,6 +35,7 @@ class ModbusMaster extends IModbus {
   late InfoRTU infoRTU;
   Map<int, ExcelInfor> excelInfoAll = {};
   late ModbusClientSerialRtu modbusClientRtu;
+  late ModbusClientSerialAscii modbusClientSerialAscii;
   String filePath = '';
   String toFilePath = '';
   // 配置信息sheets
@@ -56,16 +58,7 @@ class ModbusMaster extends IModbus {
       flowControl: SerialFlowControl.none,
       responseTimeout: Duration(milliseconds: int.parse(infoRTU.timeout)),
     );
-    modbusClientRtu.connect();
 
-    if (!modbusClientRtu.isConnected) {
-      print('----init error, disConnected-----');
-      returnEntity.status = -1;
-      returnEntity.message = 'init connect error';
-    } else {
-      print('----init success, connected success----');
-      returnEntity.message = 'connect success';
-    }
     return returnEntity;
   }
 
@@ -302,13 +295,76 @@ class ModbusMaster extends IModbus {
       excelInfoAll,
       dataCount: int.parse(dataCount),
     );
-
+    modbusClientRtu.connect();
     if (modbusClientRtu.isConnected) {
       List resultArr = await retryGetRequest(getRequestList);
       returnEntity = handleResponse(resultArr);
     } else {
       returnEntity.status = -1;
       returnEntity.message = 'not connected or register element group is empty';
+    }
+    modbusClientRtu.disconnect();
+    return returnEntity;
+  }
+
+  Future<ReturnEntity> get2bRegister({required String objectName}) async {
+    var returnEntity = ReturnEntity();
+    modbusClientRtu.connect();
+    if (_ExcelInfor2BName[objectName] == null) {
+      returnEntity.status = -1;
+      returnEntity.message = 'there is no this config in excel: $objectName';
+      return returnEntity;
+    }
+    if (modbusClientRtu.isConnected) {
+      (int, int) excelConfig = _ExcelInfor2BName[objectName]!;
+      returnEntity = retryGet2bRequest(deviceId: 2, objectId: excelConfig.$1, length: excelConfig.$2);
+      if (returnEntity.status != 0) {
+        return returnEntity;
+      }
+      Uint8List res = returnEntity.data;
+      List<String> resArr = Utils.format2bResponseData(res.sublist(7, res.length - 2));
+      returnEntity.data = resArr.join(',');
+    } else {
+      returnEntity.status = -1;
+      returnEntity.message = 'not connected';
+    }
+    modbusClientRtu.disconnect();
+    return returnEntity;
+  }
+
+  retryGet2bRequest({required int deviceId, required int objectId, required int length, int? tryTimes}) {
+    int maxTry = tryTimes ?? 0;
+    int resAllLength = length + 8 + 2;
+    ReturnEntity returnEntity = ReturnEntity(
+      data: Uint8List(resAllLength),
+    );
+
+    var pdu = Uint8List(5);
+    ByteData.view(pdu.buffer)
+      ..setUint8(0, 0x01) // 从机地址
+      ..setUint8(1, 0x2b) //2B 功能码
+      ..setUint8(2, 0x0e) // MEI类型 0E
+      ..setUint8(3, deviceId) // 读设备ID码
+      ..setUint8(4, objectId); // 对象ID
+
+    var crcMsg = ModbusClientSerialRtu.computeCRC16(pdu);
+    var pduWithCrc = Uint8List.fromList([...(pdu.toList()), ...(crcMsg.toList())]);
+
+    modbusClientRtu.serialPort!.write(pduWithCrc, timeout: modbusClientRtu.responseTimeout.inMilliseconds);
+    returnEntity.data = modbusClientRtu.serialPort!.read(resAllLength, timeout: 20); // modbusClientRtu.responseTimeout.inMilliseconds
+    if (returnEntity.data.isEmpty) {
+      returnEntity.status = -3;
+      returnEntity.message = 'Serial port connection error';
+      return returnEntity;
+    }
+    bool checkCrcResult = Utils.check2bDataCrc(returnEntity.data);
+    if (!checkCrcResult && maxTry < 5) {
+      return retryGet2bRequest(deviceId: deviceId, objectId: objectId, length: length);
+    } else if (!checkCrcResult && maxTry >= 5) {
+      returnEntity.status = -1;
+      returnEntity.data = Uint8List(resAllLength);
+      returnEntity.message = 'get data error';
+      return returnEntity;
     }
     return returnEntity;
   }
@@ -331,7 +387,7 @@ class ModbusMaster extends IModbus {
       excelInfoAll,
       serializableDat: reqArr,
     );
-
+    modbusClientRtu.connect();
     if (modbusClientRtu.isConnected) {
       List resultArr = await (reqArr.length == 1 ? retrySetRequest06(getRequestList, serializableDat) : retrySetRequest10(getRequestList, serializableDat));
       returnEntity = handleResponse(resultArr);
@@ -339,6 +395,7 @@ class ModbusMaster extends IModbus {
       returnEntity.status = -1;
       returnEntity.message = 'not connected or register element group is empty';
     }
+    modbusClientRtu.disconnect();
     return returnEntity;
   }
 

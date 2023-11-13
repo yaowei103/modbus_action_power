@@ -17,6 +17,7 @@ dependencies:
   spreadsheet_decoder: ^2.2.0
 #  modbus_client_serial: ^1.0.1
   path_provider: ^2.1.1
+  decimal: ^2.3.3
 
 # modbus_client_serial 依赖
   logging: ^1.2.0

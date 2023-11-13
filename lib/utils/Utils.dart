@@ -1,17 +1,19 @@
 import 'dart:typed_data';
 import 'package:collection/collection.dart';
+import 'package:decimal/decimal.dart';
 
 import '../packages/modbus_client/modbus_client.dart';
 import '../entity/ReturnEntity.dart';
+import '../packages/modbus_client_serial/src/modbus_client_serial.dart';
 
 class Utils {
   // Int16, Uint16, Uint32, Int32 的16进制 转 10进制数字
   static getResponseData(int val, {type}) {
     if (type == 'float') {
-      Int8List bytes = Int8List(4); // 创建一个长度为4的字节列表
+      Int32List bytes = Int32List(1); // 创建一个长度为4的字节列表
       ByteData byteData = ByteData.view(bytes.buffer); // 将字节列表转换为字节缓冲区视图
       byteData.setInt32(0, val, Endian.big);
-      double resVal = byteData.getFloat32(0, Endian.big);
+      double resVal = Decimal.parse('${byteData.getFloat32(0, Endian.big)}').toDouble() + 0; // byteData.getFloat32(0, Endian.big);
       return resVal;
     } else if (type == 'uint16') {
       Int8List bytes = Int8List(2); // 创建一个长度为4的字节列表
@@ -142,7 +144,7 @@ class Utils {
             ));
             break;
         }
-        serializableDat != null ? cacheDataArr.add(Utils.transformFrom10ToInt(serializableDat![allLength], type: excelAddressType)) : null;
+        serializableDat != null ? cacheDataArr.add(Utils.transformFrom10ToInt(serializableDat[allLength], type: excelAddressType)) : null;
         cacheLength += dataTypeMapping[excelAddressType]!;
         allLength += 1;
         if (cacheLength >= 100 || allLength >= (dataCount ?? double.infinity) || allLength >= (serializableDat?.length ?? double.infinity)) {
@@ -165,5 +167,64 @@ class Utils {
     } while (allLength < (dataCount ?? -1) || allLength < (serializableDat?.length ?? -1));
 
     return arr;
+  }
+
+  // 2b功能码返回值crc校验
+  static check2bDataCrc(Uint8List res) {
+    Uint8List resCrc = res.sublist(res.length - 2);
+    Uint8List computedCrc = ModbusClientSerialRtu.computeCRC16(res.sublist(0, res.length - 2));
+    return resCrc.equals(computedCrc);
+  }
+
+  // 解析2b功能码返回数据, 对象数量，（对象id，对象长度，对象值），（...）
+  static List<String> format2bResponseData(Uint8List res) {
+    if (res.length < 4) return [];
+
+    List<String> result = [];
+    int objCount = res[0];
+    Uint8List listData = res.sublist(1);
+
+    int? currentObjId;
+    int? currentObjLength;
+    List<int> asciiObjArr = [];
+    for (int i = 0; i < listData.length; i++) {
+      if (currentObjId == null || currentObjLength == null) {
+        currentObjId = listData[i];
+        currentObjLength = listData[i + 1];
+        i++;
+        continue;
+      } else {
+        if (asciiObjArr.length < currentObjLength) {
+          asciiObjArr.add(listData[i]);
+        }
+        if (asciiObjArr.length == currentObjLength) {
+          currentObjId = null;
+          currentObjLength = null;
+          result.add(translateIntToChar(asciiObjArr).join(''));
+          asciiObjArr = [];
+        }
+      }
+    }
+    if (result.length != objCount) {
+      return [];
+    }
+    return result;
+  }
+
+  static List<String> translateIntToChar(List<int> par) {
+    String value = '';
+    for (int i = 0; i < par.length; i++) {
+      String tempValue = '';
+      String aSCIIValue = par[i].toRadixString(16).padLeft(4, '0');
+      tempValue = aSCIIValue.substring(aSCIIValue.length - 2);
+      tempValue = int.parse(tempValue, radix: 16).toString();
+      value += String.fromCharCode(int.parse(tempValue));
+      tempValue = aSCIIValue.substring(0, 2);
+      tempValue = int.parse(tempValue, radix: 16).toString();
+      value += String.fromCharCode(int.parse(tempValue));
+    }
+    List<String> data = value.split('\u0000');
+
+    return data.where((s) => s.isNotEmpty).toList();
   }
 }

@@ -65,7 +65,7 @@ class _MyAppState extends State<MyApp> {
                   ElevatedButton(
                     onPressed: () async {
                       final reqStopwatch = Stopwatch()..start();
-                      var res = await _modbusActionPowerPlugin.setData(startRegAddr: '3072', serializableDat: '50.2');
+                      var res = await _modbusActionPowerPlugin.setData(startRegAddr: '3072', serializableDat: '50.001');
                       setState(() {
                         setTime = reqStopwatch.elapsedMilliseconds;
                         setTypeResultData = res;
@@ -83,6 +83,28 @@ class _MyAppState extends State<MyApp> {
                       });
                     },
                     child: const Text('setData-multiple'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final reqStopwatch = Stopwatch()..start();
+                      var res = await _modbusActionPowerPlugin.get2bData(objectName: '监控软件版本');
+                      setState(() {
+                        getTime = reqStopwatch.elapsedMilliseconds;
+                        getTypeResultData = res;
+                      });
+                    },
+                    child: const Text('get2BData'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final reqStopwatch = Stopwatch()..start();
+                      var res = await _modbusActionPowerPlugin.getData(startRegAddr: '24576', dataCount: '4096');
+                      setState(() {
+                        getTime = reqStopwatch.elapsedMilliseconds;
+                        getTypeResultData = res;
+                      });
+                    },
+                    child: const Text('自定义波形24576-4096'),
                   ),
                 ],
               ),
