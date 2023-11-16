@@ -4,12 +4,9 @@ export 'entity/ReturnEntity.dart';
 
 class ModbusActionPower {
   late ModbusMaster master;
-  String filePath = 'assets/ppmDCModbus.xlsx';
-
   late ModbusMaster master485;
-  String filePath485 = 'assets/DisplayControl.xlsx';
 
-  initModbus() async {
+  initModbus({required String filePath, required String filePath485}) async {
     ReturnEntity returnEntity = ReturnEntity();
     try {
       master = ModbusMaster();
@@ -47,53 +44,33 @@ class ModbusActionPower {
   getData({required String startRegAddr, required String dataCount}) async {
     // req_21504_3001
     ReturnEntity res = await master.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount); // 3072_54
-    print('=====get result=====:${res.data}');
-    if (res.status != 0) {
-      print(res.toString());
-      return '';
-    }
-    return res.data;
+    print('=====get $startRegAddr, $dataCount result=====:${res.data}');
+    return res;
   }
 
   setData({required String startRegAddr, required String serializableDat}) async {
     ReturnEntity res = await master.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat); // 3072_54
-    print('=====set result=====:${res.data}');
-    if (res.status != 0) {
-      print(res.toString());
-      return '';
-    }
-    return res.data;
+    print('=====set $startRegAddr, $serializableDat result=====:${res.data}');
+    return res;
   }
 
   get2bData({required String objectName}) async {
     ReturnEntity res = await master.get2bRegister(objectName: objectName);
     print('=====get 2b result=====:${res.data}');
-    if (res.status != 0) {
-      print(res.toString());
-      return '';
-    }
     return res.data;
   }
 
   // 飞梭获取数据
   getData485({required String startRegAddr, required String dataCount}) async {
     ReturnEntity res = await master485.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount); // 3072_54
-    print('=====get 485 result=====:${res.data}');
-    if (res.status != 0) {
-      print(res.toString());
-      return '';
-    }
-    return res.data;
+    print('=====get485 result=====:${res.data}');
+    return res;
   }
 
   // 飞梭设置数据
   setData485({required String startRegAddr, required String serializableDat}) async {
     ReturnEntity res = await master485.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat); // 3072_54
-    print('=====set result=====:${res.data}');
-    if (res.status != 0) {
-      print(res.toString());
-      return '';
-    }
-    return res.data;
+    print('=====set485 $startRegAddr, $serializableDat result=====:${res.data}');
+    return res;
   }
 }

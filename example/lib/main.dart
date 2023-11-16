@@ -18,11 +18,13 @@ class _MyAppState extends State<MyApp> {
   int getTime = 0;
   String setTypeResultData = '';
   int setTime = 0;
+  String filePath = 'assets/ppmDCModbus.xlsx';
+  String filePath485 = 'assets/DisplayControl.xlsx';
 
   @override
   void initState() {
     super.initState();
-    _modbusActionPowerPlugin.initModbus();
+    _modbusActionPowerPlugin.initModbus(filePath: filePath, filePath485: filePath485);
   }
 
   @override
@@ -44,7 +46,7 @@ class _MyAppState extends State<MyApp> {
                   children: [
                     ElevatedButton(
                       onPressed: () {
-                        _modbusActionPowerPlugin.initModbus();
+                        _modbusActionPowerPlugin.initModbus(filePath: filePath, filePath485: filePath485);
                       },
                       child: const Text('init modbus'),
                     ),

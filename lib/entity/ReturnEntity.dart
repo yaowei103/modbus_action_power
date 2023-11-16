@@ -7,6 +7,15 @@ class ReturnEntity {
     this.message = '',
     this.data,
   });
+
+  @override
+  toString() {
+    return '''{
+      'status': $status,
+      message: $message,
+      data: $data,
+    }''';
+  }
 }
 
 class DeviceComInfo {

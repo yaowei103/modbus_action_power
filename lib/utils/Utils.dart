@@ -100,7 +100,7 @@ class Utils {
                 offset: 0,
                 format: (val) {
                   var res = Utils.getResponseData(val.toInt(), type: excelAddressType);
-                  return resolution != null ? res * resolution : res;
+                  return (resolution != null && resolution != 1) ? res * resolution : res;
                 }));
             break;
           case 'uint16':
@@ -113,7 +113,7 @@ class Utils {
               offset: 0,
               format: (val) {
                 var res = Utils.getResponseData(val.toInt(), type: excelAddressType);
-                return resolution != null ? res * resolution : res;
+                return (resolution != null && resolution != 1) ? res * resolution : res;
               },
             ));
             break;
@@ -127,7 +127,7 @@ class Utils {
               offset: 0,
               format: (val) {
                 var res = Utils.getResponseData(val.toInt(), type: excelAddressType);
-                return resolution != null ? res * resolution : res;
+                return (resolution != null && resolution != 1) ? res * resolution : res;
               },
             ));
             break;
