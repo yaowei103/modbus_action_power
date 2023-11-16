@@ -112,6 +112,39 @@ class _MyAppState extends State<MyApp> {
                       },
                       child: const Text('自定义波形24576-4096'),
                     ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final reqStopwatch = Stopwatch()..start();
+                        var res = await _modbusActionPowerPlugin.getData485(startRegAddr: '0', dataCount: '6');
+                        setState(() {
+                          getTime = reqStopwatch.elapsedMilliseconds;
+                          getTypeResultData = res;
+                        });
+                      },
+                      child: const Text('get485'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final reqStopwatch = Stopwatch()..start();
+                        var res = await _modbusActionPowerPlugin.setData485(startRegAddr: '2304', serializableDat: '1');
+                        setState(() {
+                          setTime = reqStopwatch.elapsedMilliseconds;
+                          setTypeResultData = res;
+                        });
+                      },
+                      child: const Text('set485-1'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final reqStopwatch = Stopwatch()..start();
+                        var res = await _modbusActionPowerPlugin.setData485(startRegAddr: '2304', serializableDat: '0');
+                        setState(() {
+                          setTime = reqStopwatch.elapsedMilliseconds;
+                          setTypeResultData = res;
+                        });
+                      },
+                      child: const Text('set485-0'),
+                    ),
                   ],
                 ),
               ),

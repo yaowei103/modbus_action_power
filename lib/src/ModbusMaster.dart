@@ -51,6 +51,7 @@ class ModbusMaster extends IModbus {
     modbusClientRtu = ModbusClientSerialRtu(
       portName: '/dev/${infoRTU.portNames[0]}', //'ttyS3',
       unitId: 1,
+      connectionMode: ModbusConnectionMode.autoConnectAndDisconnect,
       baudRate: infoRTU.baudRates[0],
       dataBits: SerialDataBits.bits8,
       stopBits: infoRTU.stopBits[0],
