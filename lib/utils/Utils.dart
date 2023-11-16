@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 import 'package:collection/collection.dart';
-import 'package:decimal/decimal.dart';
 
 import '../packages/modbus_client/modbus_client.dart';
 import '../entity/ReturnEntity.dart';
@@ -8,12 +7,12 @@ import '../packages/modbus_client_serial/src/modbus_client_serial.dart';
 
 class Utils {
   // Int16, Uint16, Uint32, Int32 的16进制 转 10进制数字
-  static getResponseData(int val, {type}) {
+  static num getResponseData(int val, {type}) {
     if (type == 'float') {
-      Int32List bytes = Int32List(1); // 创建一个长度为4的字节列表
-      ByteData byteData = ByteData.view(bytes.buffer); // 将字节列表转换为字节缓冲区视图
-      byteData.setInt32(0, val, Endian.big);
-      double resVal = Decimal.parse('${byteData.getFloat32(0, Endian.big)}').toDouble() + 0; // byteData.getFloat32(0, Endian.big);
+      Int8List bytes = Int8List(4);
+      ByteData byteData = ByteData.view(bytes.buffer);
+      byteData.setUint32(0, val, Endian.big);
+      double resVal = byteData.getFloat32(0, Endian.big);
       return resVal;
     } else if (type == 'uint16') {
       Int8List bytes = Int8List(2); // 创建一个长度为4的字节列表
@@ -34,31 +33,32 @@ class Utils {
       int resVal = byteData.getUint32(0, Endian.big);
       return resVal;
     }
+    return 0;
   }
 
   // 10进制数字转Int16, Uint16, Uint32, Int32 的16进制
-  static transformFrom10ToInt(String val, {type}) {
+  static transformFrom10ToInt(double val, {required String type, double? resolution}) {
     if (type == 'float') {
-      // 0x42480000
-      Float32List float32list = Float32List.fromList([double.parse(val)]);
+      int? decimalCount = resolution != null ? resolution.toString().split('.')[1].length : null;
+      Float32List float32list = Float32List.fromList([decimalCount != null ? double.parse(val.toStringAsFixed(decimalCount)) : val]);
       Int32List int32list = Int32List.view(float32list.buffer);
       String hexValue = int32list[0].toRadixString(16);
-      return int.parse('0x$hexValue');
+      return int.parse(hexValue, radix: 16);
     } else if (type == 'uint16') {
-      Uint16List uint16list = Uint16List.fromList([int.parse(val)]);
+      Uint16List uint16list = Uint16List.fromList([(resolution != null ? val / resolution : val).toInt()]);
       Uint16List uint16list1 = Uint16List.view(uint16list.buffer);
       String hexValue = uint16list1[0].toRadixString(16);
-      return int.parse('0x$hexValue');
+      return int.parse(hexValue, radix: 16);
     } else if (type == 'int16') {
-      Int16List int16list = Int16List.fromList([int.parse(val)]);
+      Int16List int16list = Int16List.fromList([(resolution != null ? val / resolution : val).toInt()]);
       Int16List int16list1 = Int16List.view(int16list.buffer);
       String hexValue = int16list1[0].toRadixString(16);
-      return int.parse('0x$hexValue');
+      return int.parse(hexValue, radix: 16);
     } else if (type == 'uint32') {
-      Uint32List uint32list = Uint32List.fromList([int.parse(val)]);
+      Uint32List uint32list = Uint32List.fromList([(resolution != null ? val / resolution : val).toInt()]);
       Uint32List uint32list1 = Uint32List.view(uint32list.buffer);
       String hexValue = uint32list1[0].toRadixString(16);
-      return int.parse('0x$hexValue');
+      return int.parse(hexValue, radix: 16);
     }
   }
 
@@ -85,9 +85,10 @@ class Utils {
     List<ModbusElement<dynamic>> cacheArr = [];
     List<dynamic> cacheDataArr = [];
     do {
-      ExcelInfor? excelAddress = excelInfoAll[currentAddress];
-      String? excelAddressType = excelInfoAll[currentAddress]?.type;
-      if (excelAddress != null && excelAddressType != null && excelAddressType != 'null') {
+      ExcelInfor? currentAddressConfig = excelInfoAll[currentAddress];
+      String? excelAddressType = currentAddressConfig?.type;
+      double? resolution = currentAddressConfig?.resolution;
+      if (currentAddressConfig != null && excelAddressType != null && excelAddressType != 'null') {
         switch (excelAddressType) {
           case 'int16':
             cacheArr.add(ModbusInt16Register(
@@ -98,7 +99,8 @@ class Utils {
                 multiplier: 1,
                 offset: 0,
                 format: (val) {
-                  return Utils.getResponseData(val.toInt(), type: excelAddressType);
+                  var res = Utils.getResponseData(val.toInt(), type: excelAddressType);
+                  return resolution != null ? res * resolution : res;
                 }));
             break;
           case 'uint16':
@@ -110,8 +112,8 @@ class Utils {
               multiplier: 1,
               offset: 0,
               format: (val) {
-                return Utils.getResponseData(val.toInt(), type: excelAddressType);
-                // handleUpdate(val, ii);
+                var res = Utils.getResponseData(val.toInt(), type: excelAddressType);
+                return resolution != null ? res * resolution : res;
               },
             ));
             break;
@@ -124,8 +126,8 @@ class Utils {
               multiplier: 1,
               offset: 0,
               format: (val) {
-                return Utils.getResponseData(val.toInt(), type: excelAddressType);
-                // handleUpdate(val, ii);
+                var res = Utils.getResponseData(val.toInt(), type: excelAddressType);
+                return resolution != null ? res * resolution : res;
               },
             ));
             break;
@@ -138,13 +140,17 @@ class Utils {
               multiplier: 1,
               offset: 0,
               format: (val) {
-                return Utils.getResponseData(val.toInt(), type: excelAddressType);
-                // handleUpdate(val, ii);
+                // float 按resolution保留位数
+                // var resolution = currentAddressConfig.resolution;
+                double res = Utils.getResponseData(val.toInt(), type: excelAddressType) as double;
+                // int decimalCount = resolution.toString().split('.')[1].length;
+                // return resolution != null ? double.parse(res.toStringAsFixed(decimalCount)) : res;
+                return double.parse(res.toStringAsPrecision(7));
               },
             ));
             break;
         }
-        serializableDat != null ? cacheDataArr.add(Utils.transformFrom10ToInt(serializableDat[allLength], type: excelAddressType)) : null;
+        serializableDat != null ? cacheDataArr.add(Utils.transformFrom10ToInt(double.parse(serializableDat[allLength]), type: excelAddressType, resolution: resolution)) : null;
         cacheLength += dataTypeMapping[excelAddressType]!;
         allLength += 1;
         if (cacheLength >= 100 || allLength >= (dataCount ?? double.infinity) || allLength >= (serializableDat?.length ?? double.infinity)) {

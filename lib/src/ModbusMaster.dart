@@ -15,7 +15,7 @@ import 'Files.dart';
 
 class ModbusMaster extends IModbus {
   /// 含义名称加载信息
-  Map<String, (int, int)> _ExcelInfor2BName = {};
+  Map<String, (int, int)> _excelInfor2BName = {};
   ModbusMasterType _masterType = ModbusMasterType.RTU;
 
   /// 可表示的最小最大值
@@ -249,7 +249,7 @@ class ModbusMaster extends IModbus {
               late (int, int) tempinfoname;
               if (dt.rows[i][1].toString() != "") {
                 tempinfoname = (value1, value2);
-                _ExcelInfor2BName[dt.rows[i][1].toString()] = tempinfoname;
+                _excelInfor2BName[dt.rows[i][1].toString()] = tempinfoname;
               }
             }
             if (dt.rows[i][0].toString() == "…") {
@@ -310,13 +310,13 @@ class ModbusMaster extends IModbus {
   Future<ReturnEntity> get2bRegister({required String objectName}) async {
     var returnEntity = ReturnEntity();
     modbusClientRtu.connect();
-    if (_ExcelInfor2BName[objectName] == null) {
+    if (_excelInfor2BName[objectName] == null) {
       returnEntity.status = -1;
       returnEntity.message = 'there is no this config in excel: $objectName';
       return returnEntity;
     }
     if (modbusClientRtu.isConnected) {
-      (int, int) excelConfig = _ExcelInfor2BName[objectName]!;
+      (int, int) excelConfig = _excelInfor2BName[objectName]!;
       returnEntity = retryGet2bRequest(deviceId: 2, objectId: excelConfig.$1, length: excelConfig.$2);
       if (returnEntity.status != 0) {
         return returnEntity;

@@ -36,77 +36,84 @@ class _MyAppState extends State<MyApp> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                children: [
-                  const Text('test'),
-                  ElevatedButton(
-                    onPressed: () {
-                      _modbusActionPowerPlugin.initModbus();
-                    },
-                    child: const Text('init modbus'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      _modbusActionPowerPlugin.disConnect();
-                    },
-                    child: const Text('disConnect'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final reqStopwatch = Stopwatch()..start();
-                      var res = await _modbusActionPowerPlugin.getData(startRegAddr: '3072', dataCount: '54');
-                      setState(() {
-                        getTime = reqStopwatch.elapsedMilliseconds;
-                        getTypeResultData = res;
-                      });
-                    },
-                    child: const Text('getData'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final reqStopwatch = Stopwatch()..start();
-                      var res = await _modbusActionPowerPlugin.setData(startRegAddr: '3072', serializableDat: '50.001');
-                      setState(() {
-                        setTime = reqStopwatch.elapsedMilliseconds;
-                        setTypeResultData = res;
-                      });
-                    },
-                    child: const Text('setData-single'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final reqStopwatch = Stopwatch()..start();
-                      var res = await _modbusActionPowerPlugin.setData(startRegAddr: '3072', serializableDat: '50.4,50.5');
-                      setState(() {
-                        setTime = reqStopwatch.elapsedMilliseconds;
-                        setTypeResultData = res;
-                      });
-                    },
-                    child: const Text('setData-multiple'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final reqStopwatch = Stopwatch()..start();
-                      var res = await _modbusActionPowerPlugin.get2bData(objectName: '监控软件版本');
-                      setState(() {
-                        getTime = reqStopwatch.elapsedMilliseconds;
-                        getTypeResultData = res;
-                      });
-                    },
-                    child: const Text('get2BData'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final reqStopwatch = Stopwatch()..start();
-                      var res = await _modbusActionPowerPlugin.getData(startRegAddr: '24576', dataCount: '4096');
-                      setState(() {
-                        getTime = reqStopwatch.elapsedMilliseconds;
-                        getTypeResultData = res;
-                      });
-                    },
-                    child: const Text('自定义波形24576-4096'),
-                  ),
-                ],
+              Container(
+                width: 400,
+                padding: const EdgeInsets.all(5),
+                child: Wrap(
+                  spacing: 3,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        _modbusActionPowerPlugin.initModbus();
+                      },
+                      child: const Text('init modbus'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        _modbusActionPowerPlugin.disConnect();
+                      },
+                      child: const Text('disConnect'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final reqStopwatch = Stopwatch()..start();
+                        var res = await _modbusActionPowerPlugin.getData(startRegAddr: '3072', dataCount: '54');
+                        setState(() {
+                          getTime = reqStopwatch.elapsedMilliseconds;
+                          getTypeResultData = res;
+                        });
+                      },
+                      child: const Text('getData'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final reqStopwatch = Stopwatch()..start();
+                        var res = await _modbusActionPowerPlugin.setData(startRegAddr: '3072', serializableDat: '50.001');
+                        setState(() {
+                          setTime = reqStopwatch.elapsedMilliseconds;
+                          setTypeResultData = res;
+                        });
+                      },
+                      child: const Text('setData-single'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final reqStopwatch = Stopwatch()..start();
+                        var res = await _modbusActionPowerPlugin.setData(
+                            startRegAddr: '3072',
+                            serializableDat:
+                                '0.000001,60.0,60.0,30.0,30.0,1.0,1.0,0.1,0.1,0.1,0.1,0.1,0.1,0.0,0.0,1.0,1.0,0.1,2050.0,0.0,63.0,-63.0,33.0,-33.0,3000.0,-3000.0,2200.0,66.0,33.0,2200.0,40.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,0.001,0.001,60.0,0.0,5000.0,0.0');
+                        setState(() {
+                          setTime = reqStopwatch.elapsedMilliseconds;
+                          setTypeResultData = res;
+                        });
+                      },
+                      child: const Text('setData-multiple'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final reqStopwatch = Stopwatch()..start();
+                        var res = await _modbusActionPowerPlugin.get2bData(objectName: '监控软件版本');
+                        setState(() {
+                          getTime = reqStopwatch.elapsedMilliseconds;
+                          getTypeResultData = res;
+                        });
+                      },
+                      child: const Text('get2BData'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final reqStopwatch = Stopwatch()..start();
+                        var res = await _modbusActionPowerPlugin.getData(startRegAddr: '24576', dataCount: '4096');
+                        setState(() {
+                          getTime = reqStopwatch.elapsedMilliseconds;
+                          getTypeResultData = res;
+                        });
+                      },
+                      child: const Text('自定义波形24576-4096'),
+                    ),
+                  ],
+                ),
               ),
               Container(
                 width: 400,

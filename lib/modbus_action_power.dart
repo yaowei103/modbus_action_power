@@ -7,6 +7,10 @@ class ModbusActionPower {
   String filePath = 'assets/ppmDCModbus2.xlsx';
   late ModbusClientSerialRtu modbusClientRtu;
 
+  late ModbusMaster masterShuttle;
+  String filePathShuttle = 'assets/shuttleModbus.xlsx';
+  late ModbusClientSerialRtu modbusClientReuShuttle;
+
   initModbus() async {
     master = ModbusMaster();
     await master.initMaster(filePath);
@@ -44,7 +48,7 @@ class ModbusActionPower {
   }
 
   get2bData({required String objectName}) async {
-    ReturnEntity res = await master.get2bRegister(objectName: objectName); // 3072_54
+    ReturnEntity res = await master.get2bRegister(objectName: objectName);
     print('=====get 2b result=====:${res.data}');
     if (res.status != 0) {
       print(res.toString());
