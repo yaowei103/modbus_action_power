@@ -17,7 +17,7 @@ class ReturnEntity {
     }''';
   }
 
-  toMap() {
+  toJson() {
     return {
       'status': status,
       'message': message,
