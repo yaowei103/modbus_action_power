@@ -16,6 +16,20 @@ class ReturnEntity {
       data: $data,
     }''';
   }
+
+  toMap() {
+    return {
+      'status': status,
+      'message': message,
+      'data': data,
+    };
+  }
+
+  ReturnEntity.fromJson(json) {
+    status = json['status'];
+    message = json['message'];
+    data = json['data'];
+  }
 }
 
 class DeviceComInfo {
