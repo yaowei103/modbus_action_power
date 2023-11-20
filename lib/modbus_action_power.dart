@@ -57,7 +57,7 @@ class ModbusActionPower {
   get2bData({required String objectName}) async {
     ReturnEntity res = await master.get2bRegister(objectName: objectName);
     print('=====get 2b result=====:${res.data}');
-    return res.data;
+    return res;
   }
 
   // 飞梭获取数据

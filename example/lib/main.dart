@@ -62,7 +62,7 @@ class _MyAppState extends State<MyApp> {
                         var res = await _modbusActionPowerPlugin.getData(startRegAddr: '3072', dataCount: '54');
                         setState(() {
                           getTime = reqStopwatch.elapsedMilliseconds;
-                          getTypeResultData = res;
+                          getTypeResultData = res.status == 0 ? res.data : res.message;
                         });
                       },
                       child: const Text('getData'),
@@ -73,7 +73,7 @@ class _MyAppState extends State<MyApp> {
                         var res = await _modbusActionPowerPlugin.setData(startRegAddr: '3072', serializableDat: '50.001');
                         setState(() {
                           setTime = reqStopwatch.elapsedMilliseconds;
-                          setTypeResultData = res;
+                          setTypeResultData = res.status == 0 ? res.data : res.message;
                         });
                       },
                       child: const Text('setData-single'),
@@ -87,7 +87,7 @@ class _MyAppState extends State<MyApp> {
                                 '0.000001,60.0,60.0,30.0,30.0,1.0,1.0,0.1,0.1,0.1,0.1,0.1,0.1,0.0,0.0,1.0,1.0,0.1,2050.0,0.0,63.0,-63.0,33.0,-33.0,3000.0,-3000.0,2200.0,66.0,33.0,2200.0,40.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,0.001,0.001,60.0,0.0,5000.0,0.0');
                         setState(() {
                           setTime = reqStopwatch.elapsedMilliseconds;
-                          setTypeResultData = res;
+                          setTypeResultData = res.status == 0 ? res.data : res.message;
                         });
                       },
                       child: const Text('setData-multiple'),
@@ -98,7 +98,7 @@ class _MyAppState extends State<MyApp> {
                         var res = await _modbusActionPowerPlugin.get2bData(objectName: '监控软件版本');
                         setState(() {
                           getTime = reqStopwatch.elapsedMilliseconds;
-                          getTypeResultData = res;
+                          getTypeResultData = res.status == 0 ? res.data : res.message;
                         });
                       },
                       child: const Text('get2BData'),
@@ -109,7 +109,7 @@ class _MyAppState extends State<MyApp> {
                         var res = await _modbusActionPowerPlugin.getData(startRegAddr: '24576', dataCount: '4096');
                         setState(() {
                           getTime = reqStopwatch.elapsedMilliseconds;
-                          getTypeResultData = res;
+                          getTypeResultData = res.status == 0 ? res.data : res.message;
                         });
                       },
                       child: const Text('自定义波形24576-4096'),
@@ -120,7 +120,7 @@ class _MyAppState extends State<MyApp> {
                         var res = await _modbusActionPowerPlugin.getData485(startRegAddr: '0', dataCount: '6');
                         setState(() {
                           getTime = reqStopwatch.elapsedMilliseconds;
-                          getTypeResultData = res;
+                          getTypeResultData = res.status == 0 ? res.data : res.message;
                         });
                       },
                       child: const Text('get485'),
@@ -131,7 +131,7 @@ class _MyAppState extends State<MyApp> {
                         var res = await _modbusActionPowerPlugin.setData485(startRegAddr: '2304', serializableDat: '1');
                         setState(() {
                           setTime = reqStopwatch.elapsedMilliseconds;
-                          setTypeResultData = res;
+                          setTypeResultData = res.status == 0 ? res.data : res.message;
                         });
                       },
                       child: const Text('set485-1'),
@@ -142,7 +142,7 @@ class _MyAppState extends State<MyApp> {
                         var res = await _modbusActionPowerPlugin.setData485(startRegAddr: '2304', serializableDat: '0');
                         setState(() {
                           setTime = reqStopwatch.elapsedMilliseconds;
-                          setTypeResultData = res;
+                          setTypeResultData = res.status == 0 ? res.data : res.message;
                         });
                       },
                       child: const Text('set485-0'),

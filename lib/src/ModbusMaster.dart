@@ -42,6 +42,7 @@ class ModbusMaster extends IModbus {
   List<String> configSheetNames = ["Modbus-TCP", "Modbus-RTU", "TCP通讯设置", "RTU通讯设置", "大小端配置", "设备信息"];
 
   Future<ReturnEntity> initMaster(String filePath) async {
+    var stopwatchInit = Stopwatch()..start();
     var returnEntity = ReturnEntity();
     var readComFileResult = await readComFileInfo(filePath);
     if (readComFileResult.status != 0) {
@@ -59,6 +60,7 @@ class ModbusMaster extends IModbus {
       flowControl: SerialFlowControl.none,
       responseTimeout: Duration(milliseconds: int.parse(infoRTU.timeout)),
     );
+    print('init modbus done!, time: ${(stopwatchInit..stop()).elapsedMilliseconds}');
 
     return returnEntity;
   }
