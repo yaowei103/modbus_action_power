@@ -13,7 +13,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final _modbusActionPowerPlugin = ModbusActionPower();
+  late ModbusActionPower _modbusActionPowerPlugin;
   String getTypeResultData = '';
   int getTime = 0;
   String setTypeResultData = '';
@@ -24,7 +24,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    _modbusActionPowerPlugin.initModbus(filePath: filePath, filePath485: filePath485);
+    _modbusActionPowerPlugin = ModbusActionPower(filePath: filePath, filePath485: filePath485);
   }
 
   @override

@@ -6,7 +6,21 @@ class ModbusActionPower {
   late ModbusMaster master;
   late ModbusMaster master485;
 
-  initModbus({required String filePath, required String filePath485}) async {
+  late Future<ReturnEntity> _initialization; // 延迟初始化一个Future对象
+  ModbusActionPower._(); // 私有构造函数，用于工厂构造函数
+
+  factory ModbusActionPower({required String filePath, required String filePath485}) {
+    final instance = ModbusActionPower._();
+    // 在工厂构造函数中调用init方法并赋值给延迟初始化的Future对象
+    instance._initialization = instance.initModbus(filePath: filePath, filePath485: filePath485);
+    return instance;
+  }
+
+  Future<ReturnEntity> initDone() {
+    return _initialization; // 返回延迟初始化的Future对象
+  }
+
+  Future<ReturnEntity> initModbus({required String filePath, required String filePath485}) async {
     ReturnEntity returnEntity = ReturnEntity();
     try {
       master = ModbusMaster();
@@ -22,7 +36,7 @@ class ModbusActionPower {
     return returnEntity;
   }
 
-  disConnect() async {
+  Future<ReturnEntity> disConnect() async {
     ReturnEntity returnEntity = ReturnEntity();
     if (master.modbusClientRtu.isConnected) {
       master.modbusClientRtu.disconnect();
@@ -41,34 +55,34 @@ class ModbusActionPower {
     return returnEntity;
   }
 
-  getData({required String startRegAddr, required String dataCount}) async {
+  Future<ReturnEntity> getData({required String startRegAddr, required String dataCount}) async {
     // req_21504_3001
     ReturnEntity res = await master.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount); // 3072_54
     print('=====get $startRegAddr, $dataCount result=====:${res.data}');
     return res;
   }
 
-  setData({required String startRegAddr, required String serializableDat}) async {
+  Future<ReturnEntity> setData({required String startRegAddr, required String serializableDat}) async {
     ReturnEntity res = await master.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat); // 3072_54
     print('=====set $startRegAddr, $serializableDat result=====:${res.data}');
     return res;
   }
 
-  get2bData({required String objectName}) async {
+  Future<ReturnEntity> get2bData({required String objectName}) async {
     ReturnEntity res = await master.get2bRegister(objectName: objectName);
     print('=====get 2b result=====:${res.data}');
     return res;
   }
 
   // 飞梭获取数据
-  getData485({required String startRegAddr, required String dataCount}) async {
+  Future<ReturnEntity> getData485({required String startRegAddr, required String dataCount}) async {
     ReturnEntity res = await master485.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount); // 3072_54
     print('=====get485 result=====:${res.data}');
     return res;
   }
 
   // 飞梭设置数据
-  setData485({required String startRegAddr, required String serializableDat}) async {
+  Future<ReturnEntity> setData485({required String startRegAddr, required String serializableDat}) async {
     ReturnEntity res = await master485.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat); // 3072_54
     print('=====set485 $startRegAddr, $serializableDat result=====:${res.data}');
     return res;
