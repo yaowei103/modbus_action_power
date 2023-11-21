@@ -15,8 +15,8 @@ import 'Files.dart';
 
 class ModbusMaster extends IModbus {
   /// 含义名称加载信息
-  Map<String, (int, int)> _excelInfor2BName = {};
-  ModbusMasterType _masterType = ModbusMasterType.RTU;
+  final Map<String, (int, int)> _excelInfor2BName = {};
+  // ModbusMasterType _masterType = ModbusMasterType.RTU;
 
   /// 可表示的最小最大值
   int intMinValue = -2147483648;
@@ -110,7 +110,7 @@ class ModbusMaster extends IModbus {
         print('读取Modbus-TCP配置');
       } else if (list.contains("Modbus-RTU")) {
         SpreadsheetTable dt = excel.tables['Modbus-RTU']!;
-        _masterType = ModbusMasterType.RTU;
+        // _masterType = ModbusMasterType.RTU;
         infoRTU = InfoRTU.fromDataTable(dt);
       }
       //int[] ErrorCode = { -16449008, -16449007 };
@@ -291,17 +291,23 @@ class ModbusMaster extends IModbus {
   }
 
   @override
-  Future<ReturnEntity> getRegister({required String index, required String startRegAddr, required String dataCount}) async {
+  Future<ReturnEntity> getRegister({required String index, required String startRegAddr, required String dataCount, Duration? customTimeout}) async {
+    // excelInfoAll[99999999] = ExcelInfor(
+    //   meaning: '无此地址',
+    //   type: 'int16',
+    // );
     var returnEntity = ReturnEntity();
-    List<Map<String, dynamic>> getRequestList = Utils.getElementsGroup(
+    ReturnEntity<List<Map<String, dynamic>>?> getRequestList = Utils.getElementsGroup(
       startRegAddr,
       excelInfoAll,
       dataCount: int.parse(dataCount),
     );
+    if (getRequestList.status != 0) {
+      return getRequestList;
+    }
     modbusClientRtu.connect();
     if (modbusClientRtu.isConnected) {
-      List resultArr = await retryGetRequest(getRequestList);
-      returnEntity = handleResponse(resultArr);
+      returnEntity = await retryGetRequest(elementsGroupList: getRequestList.data!, customTimeout: customTimeout);
     } else {
       returnEntity.status = -1;
       returnEntity.message = 'not connected or register element group is empty';
@@ -380,20 +386,23 @@ class ModbusMaster extends IModbus {
   }
 
   @override
-  Future<ReturnEntity> setRegister({required String index, required String startRegAddr, required String serializableDat, int setDatLength = 0}) async {
+  Future<ReturnEntity> setRegister({required String index, required String startRegAddr, required String serializableDat, Duration? customTimeout, int setDatLength = 0}) async {
     var returnEntity = ReturnEntity();
-
     List<String> reqArr = serializableDat.split(',').toList();
 
-    List<Map<String, dynamic>> getRequestList = Utils.getElementsGroup(
+    ReturnEntity<List<Map<String, dynamic>>?> getRequestList = Utils.getElementsGroup(
       startRegAddr,
       excelInfoAll,
       serializableDat: reqArr,
     );
+    if (getRequestList.status != 0) {
+      return getRequestList;
+    }
     modbusClientRtu.connect();
     if (modbusClientRtu.isConnected) {
-      List resultArr = await (reqArr.length == 1 ? retrySetRequest06(getRequestList, serializableDat) : retrySetRequest10(getRequestList, serializableDat));
-      returnEntity = handleResponse(resultArr);
+      returnEntity = await (reqArr.length == 1
+          ? retrySetRequest06(elementsGroupList: getRequestList.data!, serializableDat: serializableDat, customTimeout: customTimeout)
+          : retrySetRequest10(elementsGroupList: getRequestList.data!, serializableDat: serializableDat, customTimeout: customTimeout));
     } else {
       returnEntity.status = -1;
       returnEntity.message = 'not connected or register element group is empty';
@@ -409,77 +418,94 @@ class ModbusMaster extends IModbus {
   }
 
   // 0x03
-  retryGetRequest(List<Map<String, dynamic>> elementsGroupList, [int? tryTimes]) async {
+  Future<ReturnEntity> retryGetRequest({required List<Map<String, dynamic>> elementsGroupList, Duration? customTimeout, int? tryTimes}) async {
+    var returnEntity = ReturnEntity();
     List resultArr = [];
     int maxTry = tryTimes ?? 0;
     print('---包数量---${elementsGroupList.length}');
     for (int i = 0; i < elementsGroupList.length; i++) {
-      await modbusClientRtu.send(ModbusElementsGroup(elementsGroupList[i]['group']).getReadRequest());
+      ModbusResponseCode responseCode = await modbusClientRtu.send(ModbusElementsGroup(elementsGroupList[i]['group']).getReadRequest(), customTimeout);
+      if (responseCode != ModbusResponseCode.requestSucceed) {
+        returnEntity.status = -1;
+        returnEntity.message = responseCode.name;
+        return returnEntity;
+      }
       resultArr.addAll(ModbusElementsGroup(elementsGroupList[i]['group']).map((item) => item.value));
     }
     if (resultArr.contains(null) && maxTry < 5) {
       maxTry += 1;
       resultArr = [];
       print('------currentReTry------$maxTry');
-      return await retryGetRequest(elementsGroupList, maxTry);
+      return await retryGetRequest(elementsGroupList: elementsGroupList, customTimeout: customTimeout, tryTimes: maxTry);
     } else if (resultArr.contains(null) && maxTry >= 5) {
-      return [];
+      returnEntity.status = -3;
+      returnEntity.message = 'SCOM';
+      return returnEntity;
     } else {
-      return resultArr;
+      returnEntity.data = resultArr.join(',');
+      return returnEntity;
     }
   }
 
   // 0x10
-  retrySetRequest10(List<Map<String, dynamic>> elementsGroupList, String serializableDat, [int? tryTimes]) async {
+  Future<ReturnEntity> retrySetRequest10({required List<Map<String, dynamic>> elementsGroupList, required String serializableDat, Duration? customTimeout, int? tryTimes}) async {
+    var returnEntity = ReturnEntity();
     List resultArr = [];
     int maxTry = tryTimes ?? 0;
     print('---包数量---${elementsGroupList.length}');
     for (int i = 0; i < elementsGroupList.length; i++) {
-      await modbusClientRtu.send(ModbusElementsGroup(elementsGroupList[i]['group']).getWriteRequest(elementsGroupList[i]['data'], rawValue: true));
+      ModbusResponseCode responseCode =
+          await modbusClientRtu.send(ModbusElementsGroup(elementsGroupList[i]['group']).getWriteRequest(elementsGroupList[i]['data'], rawValue: true));
+      if (responseCode != ModbusResponseCode.requestSucceed) {
+        returnEntity.status = -1;
+        returnEntity.message = responseCode.name;
+        return returnEntity;
+      }
       resultArr.addAll(ModbusElementsGroup(elementsGroupList[i]['group']).map((item) => item.value));
     }
     if (resultArr.contains(null) && maxTry < 5) {
       maxTry += 1;
       resultArr = [];
       print('------currentReTry------$maxTry');
-      return await retryGetRequest(elementsGroupList, maxTry);
+      return await retrySetRequest10(elementsGroupList: elementsGroupList, serializableDat: serializableDat, customTimeout: customTimeout, tryTimes: maxTry);
     } else if (resultArr.contains(null) && maxTry >= 5) {
-      return [];
+      returnEntity.status = -3;
+      returnEntity.message = 'SCOM';
+      return returnEntity;
     } else {
-      return resultArr;
+      returnEntity.data = resultArr.join(',');
+      return returnEntity;
     }
   }
 
   // 0x06
-  retrySetRequest06(List<Map<String, dynamic>> elementsGroupList, String serializableDat, [int? tryTimes]) async {
+  Future<ReturnEntity> retrySetRequest06({required List<Map<String, dynamic>> elementsGroupList, required String serializableDat, Duration? customTimeout, int? tryTimes}) async {
+    var returnEntity = ReturnEntity();
     List resultArr = [];
     int maxTry = tryTimes ?? 0;
     // 0x06只有一个element，不需要循环
     var element = elementsGroupList[0]['group'][0];
     var data = elementsGroupList[0]['data'][0];
-    await modbusClientRtu.send(element.getWriteRequest(data, rawValue: true));
+    ModbusResponseCode responseCode = await modbusClientRtu.send(element.getWriteRequest(data, rawValue: true));
+    if (responseCode != ModbusResponseCode.requestSucceed) {
+      returnEntity.status = -1;
+      returnEntity.message = responseCode.name;
+      return returnEntity;
+    }
     resultArr.add(element.value);
 
     if (resultArr.contains(null) && maxTry < 5) {
       maxTry += 1;
       resultArr = [];
       print('------currentReTry------$maxTry');
-      return await retryGetRequest(elementsGroupList, maxTry);
+      return await retrySetRequest06(elementsGroupList: elementsGroupList, serializableDat: serializableDat, customTimeout: customTimeout, tryTimes: maxTry);
+    } else if (resultArr.contains(null) && maxTry >= 5) {
+      returnEntity.status = -3;
+      returnEntity.message = 'SCOM';
+      return returnEntity;
     } else {
-      return resultArr;
+      returnEntity.data = resultArr.join(',');
+      return returnEntity;
     }
-  }
-
-  // 处理返回的数据arr
-  ReturnEntity handleResponse(List resArr) {
-    var returnEntity = ReturnEntity();
-    if (resArr.isEmpty || resArr.contains(null)) {
-      returnEntity.status = -1;
-      returnEntity.message = 'No modbus Slave';
-      returnEntity.data = '';
-    } else {
-      returnEntity.data = resArr.join(',');
-    }
-    return returnEntity;
   }
 }

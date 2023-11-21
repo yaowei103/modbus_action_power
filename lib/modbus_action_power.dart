@@ -55,15 +55,15 @@ class ModbusActionPower {
     return returnEntity;
   }
 
-  Future<ReturnEntity> getData({required String startRegAddr, required String dataCount}) async {
+  Future<ReturnEntity> getData({required String startRegAddr, required String dataCount, Duration? customTimeout}) async {
     // req_21504_3001
-    ReturnEntity res = await master.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount); // 3072_54
+    ReturnEntity res = await master.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount, customTimeout: customTimeout); // 3072_54
     print('=====get $startRegAddr, $dataCount result=====:${res.data}');
     return res;
   }
 
-  Future<ReturnEntity> setData({required String startRegAddr, required String serializableDat}) async {
-    ReturnEntity res = await master.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat); // 3072_54
+  Future<ReturnEntity> setData({required String startRegAddr, required String serializableDat, Duration? customTimeout}) async {
+    ReturnEntity res = await master.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat, customTimeout: customTimeout); // 3072_54
     print('=====set $startRegAddr, $serializableDat result=====:${res.data}');
     return res;
   }

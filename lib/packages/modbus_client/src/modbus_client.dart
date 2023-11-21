@@ -23,7 +23,7 @@ abstract class ModbusClient {
   ///
   /// If [request] has its own [responseTimeout] defined, then it will override
   /// this client [responseTimeout] (see [getResponseTimeout]).
-  Future<ModbusResponseCode> send(ModbusRequest request);
+  Future<ModbusResponseCode> send(ModbusRequest request, [Duration customTimeout]);
 
   /// Returns true if connection to client is established.
   bool get isConnected;

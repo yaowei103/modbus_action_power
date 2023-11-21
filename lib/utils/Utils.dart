@@ -63,12 +63,13 @@ class Utils {
   }
 
   // element 分包
-  static List<Map<String, dynamic>> getElementsGroup(
+  static ReturnEntity<List<Map<String, dynamic>>?> getElementsGroup(
     String startRegAddr,
     Map<int, ExcelInfor> excelInfoAll, {
     int? dataCount,
     List<String>? serializableDat,
   }) {
+    var returnEntity = ReturnEntity<List<Map<String, dynamic>>?>();
     List<Map<String, dynamic>> arr = [];
     int currentAddress = int.parse(startRegAddr);
 
@@ -82,7 +83,11 @@ class Utils {
     // 分包，100 byte
     int allLength = 0;
     int cacheLength = 0;
+
+    /// 请求Element分包
     List<ModbusElement<dynamic>> cacheArr = [];
+
+    /// 请求数据分包
     List<dynamic> cacheDataArr = [];
     do {
       ExcelInfor? currentAddressConfig = excelInfoAll[currentAddress];
@@ -168,11 +173,15 @@ class Utils {
           cacheDataArr.clear();
           cacheLength = 0;
         }
+      } else if (currentAddressConfig == null) {
+        returnEntity.status = -1;
+        returnEntity.message = '未配置该地址';
+        return returnEntity;
       }
       currentAddress += 1;
     } while (allLength < (dataCount ?? -1) || allLength < (serializableDat?.length ?? -1));
-
-    return arr;
+    returnEntity.data = arr;
+    return returnEntity;
   }
 
   // 2b功能码返回值crc校验

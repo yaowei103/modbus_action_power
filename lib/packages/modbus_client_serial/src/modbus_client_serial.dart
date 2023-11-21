@@ -71,8 +71,8 @@ abstract class ModbusClientSerial extends ModbusClient {
 
   /// Sends a modbus request
   @override
-  Future<ModbusResponseCode> send(ModbusRequest request) async {
-    var resTimeoutMillis = getResponseTimeout(request).inMilliseconds;
+  Future<ModbusResponseCode> send(ModbusRequest request, [Duration? customTimeout]) async {
+    var resTimeoutMillis = customTimeout?.inMilliseconds ?? getResponseTimeout(request).inMilliseconds;
     var res = await _lock.synchronized(() async {
       // Connect if needed
       try {
@@ -193,7 +193,7 @@ class _ModbusSerialResponse {
     if (_rxData![0] != unitId) {
       return ModbusResponseCode.requestRxWrongUnitId;
     }
-    if (_rxData![1] & 0x80 != 0) {
+    if (_rxData![1] & 0x90 != 0) {
       return ModbusResponseCode.fromCode(_rxData![2]);
     }
     if (_rxData![1] != request.functionCode) {

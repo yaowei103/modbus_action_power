@@ -1,7 +1,7 @@
-class ReturnEntity {
+class ReturnEntity<T> {
   int? status;
   String? message;
-  dynamic data;
+  T? data;
   ReturnEntity({
     this.status = 0,
     this.message = '',
