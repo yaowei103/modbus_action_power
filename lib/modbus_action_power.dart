@@ -25,7 +25,7 @@ class ModbusActionPower {
     try {
       master = ModbusMaster();
       await master.initMaster(filePath);
-
+      await Future.delayed(const Duration(milliseconds: 200));
       master485 = ModbusMaster();
       await master485.initMaster(filePath485);
     } catch (e) {

@@ -41,10 +41,11 @@ class ModbusMaster extends IModbus {
   // 配置信息sheets
   List<String> configSheetNames = ["Modbus-TCP", "Modbus-RTU", "TCP通讯设置", "RTU通讯设置", "大小端配置", "设备信息"];
 
-  Future<ReturnEntity> initMaster(String filePath) async {
+  Future<ReturnEntity> initMaster(String filePathStr) async {
     var stopwatchInit = Stopwatch()..start();
     var returnEntity = ReturnEntity();
-    var readComFileResult = await readComFileInfo(filePath);
+    filePath = filePathStr;
+    var readComFileResult = await readComFileInfo();
     if (readComFileResult.status != 0) {
       print(readComFileResult.message);
       return readComFileResult;
@@ -70,9 +71,8 @@ class ModbusMaster extends IModbus {
   /// 加载协议
   /// <param name="protocol1">协议文件全路径</param>
   @override
-  Future<ReturnEntity> readComFileInfo(String protocol1) async {
-    filePath = protocol1;
-    List<String> vs = protocol1.split('\\');
+  Future<ReturnEntity> readComFileInfo() async {
+    List<String> vs = filePath.split('\\');
     for (var vsnum = 0; vsnum < vs.length - 1; vsnum++) {
       toFilePath += '${vs[vsnum]}\\';
     }

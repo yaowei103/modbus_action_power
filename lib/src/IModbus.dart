@@ -83,7 +83,7 @@ abstract class IModbus {
   /// 加载协议
   ///
   /// protocol 协议文件全路径
-  Future<ReturnEntity> readComFileInfo(String protocol);
+  Future<ReturnEntity> readComFileInfo();
 
   // 注销接口
   // 总线监测事件接口

@@ -12,12 +12,14 @@ class Files {
       if (File(toFilePath).existsSync()) {
         File(toFilePath).deleteSync();
       }
-      // var path = await
       var data = await rootBundle.load(fromFilePath);
       var fileName = toFilePath.split('/')[1]; // 备份文件名
-      String dir = (await getApplicationSupportDirectory()).path;
-      var file = await File('$dir/$fileName').writeAsBytes(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
-      if (file.existsSync()) {
+      Directory internalDir = await getApplicationSupportDirectory();
+      String dir = internalDir.path;
+      File file = File('$dir/$fileName');
+      await file.writeAsBytes(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+      bool fileExist = await file.exists();
+      if (fileExist) {
         returnEntity.status = 0;
         returnEntity.data = file.path;
         return returnEntity;
