@@ -425,7 +425,7 @@ class ModbusMaster extends IModbus {
     print('---包数量---${elementsGroupList.length}');
     for (int i = 0; i < elementsGroupList.length; i++) {
       ModbusResponseCode responseCode = await modbusClientRtu.send(ModbusElementsGroup(elementsGroupList[i]['group']).getReadRequest(), customTimeout);
-      if (responseCode != ModbusResponseCode.requestSucceed) {
+      if (responseCode != ModbusResponseCode.requestSucceed && responseCode != ModbusResponseCode.requestTimeout) {
         returnEntity.status = -1;
         returnEntity.message = responseCode.name;
         return returnEntity;
@@ -456,7 +456,7 @@ class ModbusMaster extends IModbus {
     for (int i = 0; i < elementsGroupList.length; i++) {
       ModbusResponseCode responseCode =
           await modbusClientRtu.send(ModbusElementsGroup(elementsGroupList[i]['group']).getWriteRequest(elementsGroupList[i]['data'], rawValue: true));
-      if (responseCode != ModbusResponseCode.requestSucceed) {
+      if (responseCode != ModbusResponseCode.requestSucceed && responseCode != ModbusResponseCode.requestTimeout) {
         returnEntity.status = -1;
         returnEntity.message = responseCode.name;
         return returnEntity;
@@ -487,7 +487,7 @@ class ModbusMaster extends IModbus {
     var element = elementsGroupList[0]['group'][0];
     var data = elementsGroupList[0]['data'][0];
     ModbusResponseCode responseCode = await modbusClientRtu.send(element.getWriteRequest(data, rawValue: true));
-    if (responseCode != ModbusResponseCode.requestSucceed) {
+    if (responseCode != ModbusResponseCode.requestSucceed && responseCode != ModbusResponseCode.requestTimeout) {
       returnEntity.status = -1;
       returnEntity.message = responseCode.name;
       return returnEntity;
