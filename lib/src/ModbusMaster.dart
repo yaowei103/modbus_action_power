@@ -77,8 +77,8 @@ class ModbusMaster extends IModbus {
       toFilePath += '${vs[vsnum]}\\';
     }
     List<String> vs1 = vs[vs.length - 1].split('.');
-
-    toFilePath += '${vs1[0]}协议备份${DateFormat('yyyy_MM_dd HH_mm_ss').format(DateTime.now())}.${vs1[1]}';
+    DateTime now = DateTime.now();
+    toFilePath += '${vs1[0]}协议备份${DateFormat('yyyy_MM_dd HH_mm_ss').format(now)}-${now.hashCode}.${vs1[1]}';
     ReturnEntity returnEntity = await readComFileInfo1(); //读取协议文件，并检查协议文件正确性
     return returnEntity;
   }
@@ -425,7 +425,7 @@ class ModbusMaster extends IModbus {
     print('---包数量---${elementsGroupList.length}');
     for (int i = 0; i < elementsGroupList.length; i++) {
       ModbusResponseCode responseCode = await modbusClientRtu.send(ModbusElementsGroup(elementsGroupList[i]['group']).getReadRequest(), customTimeout);
-      if (responseCode != ModbusResponseCode.requestSucceed && responseCode != ModbusResponseCode.requestTimeout) {
+      if (responseCode != ModbusResponseCode.requestSucceed && responseCode != ModbusResponseCode.requestTimeout && responseCode != ModbusResponseCode.undefinedErrorCode) {
         returnEntity.status = -1;
         returnEntity.message = responseCode.name;
         return returnEntity;
@@ -456,7 +456,7 @@ class ModbusMaster extends IModbus {
     for (int i = 0; i < elementsGroupList.length; i++) {
       ModbusResponseCode responseCode =
           await modbusClientRtu.send(ModbusElementsGroup(elementsGroupList[i]['group']).getWriteRequest(elementsGroupList[i]['data'], rawValue: true));
-      if (responseCode != ModbusResponseCode.requestSucceed && responseCode != ModbusResponseCode.requestTimeout) {
+      if (responseCode != ModbusResponseCode.requestSucceed && responseCode != ModbusResponseCode.requestTimeout && responseCode != ModbusResponseCode.undefinedErrorCode) {
         returnEntity.status = -1;
         returnEntity.message = responseCode.name;
         return returnEntity;
@@ -487,7 +487,7 @@ class ModbusMaster extends IModbus {
     var element = elementsGroupList[0]['group'][0];
     var data = elementsGroupList[0]['data'][0];
     ModbusResponseCode responseCode = await modbusClientRtu.send(element.getWriteRequest(data, rawValue: true));
-    if (responseCode != ModbusResponseCode.requestSucceed && responseCode != ModbusResponseCode.requestTimeout) {
+    if (responseCode != ModbusResponseCode.requestSucceed && responseCode != ModbusResponseCode.requestTimeout && responseCode != ModbusResponseCode.undefinedErrorCode) {
       returnEntity.status = -1;
       returnEntity.message = responseCode.name;
       return returnEntity;
