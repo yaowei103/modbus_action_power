@@ -97,16 +97,17 @@ class Utils {
         switch (excelAddressType) {
           case 'int16':
             cacheArr.add(ModbusInt16Register(
-                name: "ModBusRegisterName",
-                type: ModbusElementType.holdingRegister, //03， 06， 10
-                address: currentAddress,
-                uom: "",
-                multiplier: 1,
-                offset: 0,
-                format: (val) {
-                  var res = Utils.getResponseData(val.toInt(), type: excelAddressType);
-                  return (resolution != null && resolution != 1) ? res * resolution : res;
-                }));
+              name: "ModBusRegisterName",
+              type: ModbusElementType.holdingRegister, //03， 06， 10
+              address: currentAddress,
+              uom: "",
+              multiplier: 1,
+              offset: 0,
+              format: (val) {
+                var res = Utils.getResponseData(val.toInt(), type: excelAddressType);
+                return (resolution != null && resolution != 1) ? res * resolution : res;
+              },
+            ));
             break;
           case 'uint16':
             cacheArr.add(ModbusUint16Register(
