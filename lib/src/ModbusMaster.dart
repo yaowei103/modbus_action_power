@@ -434,7 +434,7 @@ class ModbusMaster extends IModbus {
   Future<ReturnEntity> getRequest03({required List<Map<String, dynamic>> elementsGroupList, Duration? customTimeout}) async {
     var returnEntity = ReturnEntity();
     List resultArr = [];
-    debugPrint('---包数量---${elementsGroupList.length}');
+    debugPrint('--包数量：${elementsGroupList.length}');
     for (int i = 0; i < elementsGroupList.length; i++) {
       ModbusResponseCode responseCode = await retrySinglePackage(
         request: ModbusElementsGroup(elementsGroupList[i]['group']).getReadRequest(),
@@ -491,7 +491,7 @@ class ModbusMaster extends IModbus {
   Future<ReturnEntity> setRequest10({required List<Map<String, dynamic>> elementsGroupList, required String serializableDat, Duration? customTimeout}) async {
     var returnEntity = ReturnEntity();
     List resultArr = [];
-    debugPrint('---包数量---${elementsGroupList.length}');
+    debugPrint('--包数量：${elementsGroupList.length}');
     for (int i = 0; i < elementsGroupList.length; i++) {
       ModbusResponseCode responseCode = await retrySinglePackage(
         request: ModbusElementsGroup(elementsGroupList[i]['group']).getWriteRequest(elementsGroupList[i]['data'], rawValue: true),

@@ -46,10 +46,10 @@ class ModbusActionPower {
       master485.modbusClientRtu.disconnect();
     }
     if (!master.modbusClientRtu.isConnected && !master485.modbusClientRtu.isConnected) {
-      debugPrint('----disConnect done----');
+      debugPrint('-----------------------disConnect done');
       returnEntity.status = 0;
     } else {
-      debugPrint('----disConnect error, please retry----');
+      debugPrint('-----------------------disConnect error, please retry----');
       returnEntity.status = -1;
       returnEntity.message = 'disConnect error, try again!';
     }
@@ -66,7 +66,7 @@ class ModbusActionPower {
     ReturnEntity res = await master.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount, customTimeout: customTimeout); // 3072_54
     debugPrint('===get $startRegAddr, $dataCount');
     debugPrint('===get result: ${res.status == 0 ? res.data : res.message}');
-    debugPrint('===time: ${(sw..stop()).elapsedMilliseconds}');
+    debugPrint('===get time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
   }
 
@@ -79,7 +79,7 @@ class ModbusActionPower {
     ReturnEntity res = await master.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat, customTimeout: customTimeout); // 3072_54
     debugPrint('===set $startRegAddr, $serializableDat');
     debugPrint('===set result: ${res.status == 0 ? res.data : res.message}');
-    debugPrint('===time: ${(sw..stop()).elapsedMilliseconds}');
+    debugPrint('===set time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
   }
 
@@ -89,7 +89,7 @@ class ModbusActionPower {
     Stopwatch sw = Stopwatch()..start();
     ReturnEntity res = await master.get2bRegister(objectName: objectName);
     debugPrint('===get 2b result:${res.status == 0 ? res.data : res.message}');
-    debugPrint('===time: ${(sw..stop()).elapsedMilliseconds}');
+    debugPrint('===get time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
   }
 
@@ -101,7 +101,7 @@ class ModbusActionPower {
     Stopwatch sw = Stopwatch()..start();
     ReturnEntity res = await master485.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount); // 3072_54
     debugPrint('===get485 result:${res.status == 0 ? res.data : res.message}');
-    debugPrint('===time: ${(sw..stop()).elapsedMilliseconds}');
+    debugPrint('===get time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
   }
 
@@ -113,7 +113,7 @@ class ModbusActionPower {
     Stopwatch sw = Stopwatch()..start();
     ReturnEntity res = await master485.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat); // 3072_54
     debugPrint('===set485 $startRegAddr, $serializableDat result=====:${res.status == 0 ? res.data : res.message}');
-    debugPrint('===time: ${(sw..stop()).elapsedMilliseconds}');
+    debugPrint('===set time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
   }
 }
