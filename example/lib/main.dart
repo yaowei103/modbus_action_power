@@ -5251,7 +5251,7 @@ class _MyAppState extends State<MyApp> {
                         var res = await _modbusActionPowerPlugin.setData(
                           startRegAddr: '24576',
                           serializableDat: customWaveList.join(','),
-                          customTimeout: const Duration(milliseconds: 100),
+                          // customTimeout: const Duration(milliseconds: 50),
                         );
                         setState(() {
                           setTime = reqStopwatch.elapsedMilliseconds;
@@ -5281,7 +5281,7 @@ class _MyAppState extends State<MyApp> {
                         var res = await _modbusActionPowerPlugin.setData(
                           startRegAddr: '31488',
                           serializableDat: customCurveList.join(','),
-                          customTimeout: const Duration(milliseconds: 100),
+                          // customTimeout: const Duration(milliseconds: 50),
                         );
                         setState(() {
                           setTime = reqStopwatch.elapsedMilliseconds;

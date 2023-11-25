@@ -504,6 +504,8 @@ class ModbusMaster extends IModbus {
         return returnEntity;
       }
       resultArr.addAll(ModbusElementsGroup(elementsGroupList[i]['group']).map((item) => item.value));
+      // 多包连续发送返回错误码的概率30%-50%, 每包延迟发送，单包错误码概率降低到5%以下
+      await Future.delayed(Duration.zero);
     }
     if (resultArr.contains(null)) {
       returnEntity.status = -3;
