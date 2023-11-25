@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:modbus_action_power/src/ModbusMaster.dart';
 import 'package:modbus_action_power/entity/ReturnEntity.dart';
 export 'entity/ReturnEntity.dart';
@@ -32,7 +33,7 @@ class ModbusActionPower {
       returnEntity.status = -1;
       returnEntity.message = 'init modbus error: ${e.toString()}';
     }
-    print('init success');
+    debugPrint('init success');
     return returnEntity;
   }
 
@@ -45,46 +46,74 @@ class ModbusActionPower {
       master485.modbusClientRtu.disconnect();
     }
     if (!master.modbusClientRtu.isConnected && !master485.modbusClientRtu.isConnected) {
-      print('----disConnect done----');
+      debugPrint('----disConnect done----');
       returnEntity.status = 0;
     } else {
-      print('----disConnect error, please retry----');
+      debugPrint('----disConnect error, please retry----');
       returnEntity.status = -1;
       returnEntity.message = 'disConnect error, try again!';
     }
     return returnEntity;
   }
 
+  /// 03功能码获取数据
+  /// String startRegAddr 起始地址
+  /// String dataCount 寄存器个数
+  /// Duration customTimeout 单包超时时间
   Future<ReturnEntity> getData({required String startRegAddr, required String dataCount, Duration? customTimeout}) async {
     // req_21504_3001
+    Stopwatch sw = Stopwatch()..start();
     ReturnEntity res = await master.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount, customTimeout: customTimeout); // 3072_54
-    print('=====get $startRegAddr, $dataCount result=====:${res.status == 0 ? res.data : res.message}');
+    debugPrint('===get $startRegAddr, $dataCount');
+    debugPrint('===get result: ${res.status == 0 ? res.data : res.message}');
+    debugPrint('===time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
   }
 
+  /// 06/10功能码下发数据
+  /// String startRegAddr 起始地址
+  /// String serializableDat：发送的数据 eg. 1,2,3,4
+  /// Duration customTimeout 单包超时时间
   Future<ReturnEntity> setData({required String startRegAddr, required String serializableDat, Duration? customTimeout}) async {
+    Stopwatch sw = Stopwatch()..start();
     ReturnEntity res = await master.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat, customTimeout: customTimeout); // 3072_54
-    print('=====set $startRegAddr, $serializableDat result=====:${res.status == 0 ? res.data : res.message}');
+    debugPrint('===set $startRegAddr, $serializableDat');
+    debugPrint('===set result: ${res.status == 0 ? res.data : res.message}');
+    debugPrint('===time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
   }
 
+  /// 2b功能码下发数据
+  /// String objectName 对象名称
   Future<ReturnEntity> get2bData({required String objectName}) async {
+    Stopwatch sw = Stopwatch()..start();
     ReturnEntity res = await master.get2bRegister(objectName: objectName);
-    print('=====get 2b result=====:${res.status == 0 ? res.data : res.message}');
+    debugPrint('===get 2b result:${res.status == 0 ? res.data : res.message}');
+    debugPrint('===time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
   }
 
   // 飞梭获取数据
+  /// 获取飞梭数据
+  /// String startRegAddr 起始地址
+  /// String dataCount 寄存器个数
   Future<ReturnEntity> getData485({required String startRegAddr, required String dataCount}) async {
+    Stopwatch sw = Stopwatch()..start();
     ReturnEntity res = await master485.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount); // 3072_54
-    print('=====get485 result=====:${res.status == 0 ? res.data : res.message}');
+    debugPrint('===get485 result:${res.status == 0 ? res.data : res.message}');
+    debugPrint('===time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
   }
 
   // 飞梭设置数据
+  /// 设置飞梭数据
+  /// String startRegAddr 起始地址
+  /// String serializableDat 设置的数据
   Future<ReturnEntity> setData485({required String startRegAddr, required String serializableDat}) async {
+    Stopwatch sw = Stopwatch()..start();
     ReturnEntity res = await master485.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat); // 3072_54
-    print('=====set485 $startRegAddr, $serializableDat result=====:${res.status == 0 ? res.data : res.message}');
+    debugPrint('===set485 $startRegAddr, $serializableDat result=====:${res.status == 0 ? res.data : res.message}');
+    debugPrint('===time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
   }
 }
