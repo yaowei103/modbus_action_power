@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:modbus_action_power/src/IModbus.dart';
 import 'package:modbus_action_power/entity/ReturnEntity.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:spreadsheet_decoder/spreadsheet_decoder.dart';
 import 'package:modbus_action_power/utils/Utils.dart';
 import '../entity/InfoRTU.dart';
@@ -38,6 +39,7 @@ class ModbusMaster extends IModbus {
   late ModbusClientSerialRtu modbusClientRtu;
   late ModbusClientSerialAscii modbusClientSerialAscii;
   String filePath = '';
+  String fileName = ''; // modbus 协议配置文件名称
   String toFilePath = '';
   // 配置信息sheets
   List<String> configSheetNames = ["Modbus-TCP", "Modbus-RTU", "TCP通讯设置", "RTU通讯设置", "大小端配置", "设备信息"];
@@ -47,7 +49,10 @@ class ModbusMaster extends IModbus {
     var stopwatchInit = Stopwatch()..start();
     var returnEntity = ReturnEntity();
     filePath = filePathStr;
-    var readComFileResult = await readComFileInfo();
+    fileName = filePathStr.split('/').last;
+    // init master之前，调用Files.copyFileToSupportDir,将modbus协议文件copy到supportDir， 然后直接从getApplicationSupportDirectory目录读取
+    // var readComFileResult = await readComFileInfo();
+    var readComFileResult = await readComFileInfo1();
     if (readComFileResult.status != 0) {
       debugPrint(readComFileResult.message);
       return readComFileResult;
@@ -97,11 +102,14 @@ class ModbusMaster extends IModbus {
   Future<ReturnEntity> readComFileInfo1() async {
     ReturnEntity returnEntity = ReturnEntity(); //异常信息返回对象
     try {
-      returnEntity = await Files.copyFileToLocal(filePath, toFilePath); //协议文件备份
-      if (returnEntity.status != 0) {
-        return returnEntity;
-      }
-      toFilePath = returnEntity.data!;
+      // returnEntity = await Files.copyFileToLocal(filePath, toFilePath); //协议文件备份
+      // if (returnEntity.status != 0) {
+      //   return returnEntity;
+      // }
+      // toFilePath = returnEntity.data!;
+      // init之前已经copy过modbus配置文件
+      var supportDir = await getApplicationSupportDirectory();
+      toFilePath = '${supportDir.path}/$fileName';
 
       /// 读取协议文件
       var bytes = File(toFilePath).readAsBytesSync();

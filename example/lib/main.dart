@@ -5150,7 +5150,13 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+    init();
+  }
+
+  init() async {
+    await Files.copyFileToSupportDir([filePath, filePath485]);
     _modbusActionPowerPlugin = ModbusActionPower(filePath: filePath, filePath485: filePath485);
+    await _modbusActionPowerPlugin.initDone();
   }
 
   @override

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:modbus_action_power/src/ModbusMaster.dart';
 import 'package:modbus_action_power/entity/ReturnEntity.dart';
 export 'entity/ReturnEntity.dart';
+export 'src/Files.dart';
 
 class ModbusActionPower {
   late ModbusMaster master;
@@ -25,10 +26,8 @@ class ModbusActionPower {
     ReturnEntity returnEntity = ReturnEntity();
     try {
       master = ModbusMaster();
-      await master.initMaster(filePath);
-      await Future.delayed(const Duration(milliseconds: 200));
       master485 = ModbusMaster();
-      await master485.initMaster(filePath485);
+      await Future.wait([master.initMaster(filePath), master485.initMaster(filePath485)]);
     } catch (e) {
       returnEntity.status = -1;
       returnEntity.message = 'init modbus error: ${e.toString()}';

@@ -83,4 +83,16 @@ class Files {
     }
   }
   // #endregion
+
+  // modbus配置文件写入 getApplicationSupportDirectory
+  static Future copyFileToSupportDir(List<String> filePaths) async {
+    for (String filePath in filePaths) {
+      String fileName = filePath.split('/').last;
+      var data = await rootBundle.load(filePath);
+      Directory internalDir = await getApplicationSupportDirectory();
+      String dir = internalDir.path;
+      File file = File('$dir/$fileName');
+      await file.writeAsBytes(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+    }
+  }
 }
