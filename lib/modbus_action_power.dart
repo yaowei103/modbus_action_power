@@ -62,10 +62,10 @@ class ModbusActionPower {
   Future<ReturnEntity> getData({required String startRegAddr, required String dataCount, Duration? customTimeout}) async {
     // req_21504_3001
     Stopwatch sw = Stopwatch()..start();
-    ReturnEntity res = await master.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount, customTimeout: customTimeout); // 3072_54
     debugPrint('===get $startRegAddr, $dataCount');
-    debugPrint('===get result: ${res.status == 0 ? res.data : res.message}');
-    debugPrint('===get time: ${(sw..stop()).elapsedMilliseconds}');
+    ReturnEntity res = await master.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount, customTimeout: customTimeout); // 3072_54
+    debugPrint('===get $startRegAddr, result: ${res.status == 0 ? res.data : res.message}');
+    debugPrint('===get $startRegAddr, time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
   }
 
@@ -75,10 +75,10 @@ class ModbusActionPower {
   /// Duration customTimeout 单包超时时间
   Future<ReturnEntity> setData({required String startRegAddr, required String serializableDat, Duration? customTimeout}) async {
     Stopwatch sw = Stopwatch()..start();
-    ReturnEntity res = await master.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat, customTimeout: customTimeout); // 3072_54
     debugPrint('===set $startRegAddr, $serializableDat');
-    debugPrint('===set result: ${res.status == 0 ? res.data : res.message}');
-    debugPrint('===set time: ${(sw..stop()).elapsedMilliseconds}');
+    ReturnEntity res = await master.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat, customTimeout: customTimeout); // 3072_54
+    debugPrint('===set $startRegAddr, result: ${res.status == 0 ? res.data : res.message}');
+    debugPrint('===set $startRegAddr, time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
   }
 

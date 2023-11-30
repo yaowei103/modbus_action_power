@@ -60,7 +60,7 @@ class ModbusMaster extends IModbus {
     modbusClientRtu = ModbusClientSerialRtu(
       portName: '/dev/${infoRTU.portNames[0]}', //'ttyS3',
       unitId: 1,
-      connectionMode: ModbusConnectionMode.autoConnectAndDisconnect,
+      connectionMode: ModbusConnectionMode.autoConnectAndKeepConnected, // 必须要长连，否则如果报故障的时候，会发生03重查导致异常退出
       baudRate: infoRTU.baudRates[0],
       dataBits: SerialDataBits.bits8,
       stopBits: infoRTU.stopBits[0],
@@ -68,6 +68,7 @@ class ModbusMaster extends IModbus {
       flowControl: SerialFlowControl.none,
       responseTimeout: Duration(milliseconds: int.parse(infoRTU.timeout)),
     );
+    modbusClientRtu.connect();
     debugPrint('init modbus done!, time: ${(stopwatchInit..stop()).elapsedMilliseconds}');
 
     return returnEntity;
@@ -315,20 +316,20 @@ class ModbusMaster extends IModbus {
     if (getRequestList.status != 0) {
       return getRequestList;
     }
-    modbusClientRtu.connect();
+    // modbusClientRtu.connect();
     if (modbusClientRtu.isConnected) {
       returnEntity = await getRequest03(elementsGroupList: getRequestList.data!, customTimeout: customTimeout);
     } else {
       returnEntity.status = -1;
       returnEntity.message = 'not connected or register element group is empty';
     }
-    modbusClientRtu.disconnect();
+    // modbusClientRtu.disconnect();
     return returnEntity;
   }
 
   Future<ReturnEntity> get2bRegister({required String objectName}) async {
     var returnEntity = ReturnEntity();
-    modbusClientRtu.connect();
+    // modbusClientRtu.connect();
     if (_excelInfor2BName[objectName] == null) {
       returnEntity.status = -1;
       returnEntity.message = 'there is no this config in excel: $objectName';
@@ -347,7 +348,7 @@ class ModbusMaster extends IModbus {
       returnEntity.status = -1;
       returnEntity.message = 'not connected';
     }
-    modbusClientRtu.disconnect();
+    // modbusClientRtu.disconnect();
     return returnEntity;
   }
 
@@ -407,7 +408,7 @@ class ModbusMaster extends IModbus {
     if (getRequestList.status != 0) {
       return getRequestList;
     }
-    modbusClientRtu.connect();
+    // modbusClientRtu.connect();
     if (modbusClientRtu.isConnected) {
       returnEntity = await (reqArr.length == 1
           ? setRequest06(elementsGroupList: getRequestList.data!, serializableDat: serializableDat, customTimeout: customTimeout)
@@ -416,7 +417,7 @@ class ModbusMaster extends IModbus {
       returnEntity.status = -1;
       returnEntity.message = 'not connected or register element group is empty';
     }
-    modbusClientRtu.disconnect();
+    // modbusClientRtu.disconnect();
     return returnEntity;
   }
 
@@ -431,8 +432,8 @@ class ModbusMaster extends IModbus {
     if (responseCode == ModbusResponseCode.requestSucceed) {
       return responseCode;
     } else if (retry < maxRetry) {
-      debugPrint('--重发第$currentPackage 包第${retry + 1} 次');
-      return retrySinglePackage(request: request, customTimeout: customTimeout, retry: retry += 1, currentPackage: currentPackage);
+      debugPrint('--重发 第$currentPackage包第${retry + 1}次, $responseCode');
+      return retrySinglePackage(request: request, customTimeout: customTimeout, retry: retry + 1, currentPackage: currentPackage);
     } else {
       return responseCode;
     }
@@ -442,7 +443,7 @@ class ModbusMaster extends IModbus {
   Future<ReturnEntity> getRequest03({required List<Map<String, dynamic>> elementsGroupList, Duration? customTimeout}) async {
     var returnEntity = ReturnEntity();
     List resultArr = [];
-    debugPrint('--包数量：${elementsGroupList.length}');
+    debugPrint('===包数量：${elementsGroupList.length}');
     for (int i = 0; i < elementsGroupList.length; i++) {
       ModbusResponseCode responseCode = await retrySinglePackage(
         request: ModbusElementsGroup(elementsGroupList[i]['group']).getReadRequest(),
@@ -499,7 +500,7 @@ class ModbusMaster extends IModbus {
   Future<ReturnEntity> setRequest10({required List<Map<String, dynamic>> elementsGroupList, required String serializableDat, Duration? customTimeout}) async {
     var returnEntity = ReturnEntity();
     List resultArr = [];
-    debugPrint('--包数量：${elementsGroupList.length}');
+    debugPrint('===包数量：${elementsGroupList.length}');
     for (int i = 0; i < elementsGroupList.length; i++) {
       ModbusResponseCode responseCode = await retrySinglePackage(
         request: ModbusElementsGroup(elementsGroupList[i]['group']).getWriteRequest(elementsGroupList[i]['data'], rawValue: true),
