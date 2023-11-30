@@ -433,6 +433,7 @@ class ModbusMaster extends IModbus {
       return responseCode;
     } else if (retry < maxRetry) {
       debugPrint('--重发 第$currentPackage包第${retry + 1}次, $responseCode');
+      await Future.delayed(const Duration(milliseconds: 2));
       return retrySinglePackage(request: request, customTimeout: customTimeout, retry: retry + 1, currentPackage: currentPackage);
     } else {
       return responseCode;
