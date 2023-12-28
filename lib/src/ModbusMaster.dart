@@ -318,7 +318,7 @@ class ModbusMaster extends IModbus {
     }
     // modbusClientRtu.connect();
     if (modbusClientRtu.isConnected) {
-      returnEntity = await getRequest03(elementsGroupList: getRequestList.data!, customTimeout: customTimeout);
+      returnEntity = await getRequest03(elementsGroupList: getRequestList.data!, customTimeout: customTimeout ?? const Duration(milliseconds: 500));
     } else {
       returnEntity.status = -1;
       returnEntity.message = 'not connected or register element group is empty';
@@ -370,7 +370,7 @@ class ModbusMaster extends IModbus {
     var pduWithCrc = Uint8List.fromList([...(pdu.toList()), ...(crcMsg.toList())]);
 
     modbusClientRtu.serialPort!.write(pduWithCrc, timeout: modbusClientRtu.responseTimeout.inMilliseconds);
-    returnEntity.data = modbusClientRtu.serialPort!.read(resAllLength, timeout: 20); // modbusClientRtu.responseTimeout.inMilliseconds
+    returnEntity.data = modbusClientRtu.serialPort!.read(resAllLength, timeout: modbusClientRtu.responseTimeout.inMilliseconds); // modbusClientRtu.responseTimeout.inMilliseconds
     if (returnEntity.data.isEmpty) {
       returnEntity.status = -3;
       returnEntity.message = 'Serial port connection error';
@@ -411,10 +411,10 @@ class ModbusMaster extends IModbus {
     // modbusClientRtu.connect();
     if (modbusClientRtu.isConnected) {
       returnEntity = await (reqArr.length == 1
-          ? setRequest06(elementsGroupList: getRequestList.data!, serializableDat: serializableDat, customTimeout: customTimeout)
-          : setRequest10(elementsGroupList: getRequestList.data!, serializableDat: serializableDat, customTimeout: customTimeout));
+          ? setRequest06(elementsGroupList: getRequestList.data!, serializableDat: serializableDat, customTimeout: customTimeout ?? const Duration(milliseconds: 500))
+          : setRequest10(elementsGroupList: getRequestList.data!, serializableDat: serializableDat, customTimeout: customTimeout ?? const Duration(milliseconds: 500)));
     } else {
-      returnEntity.status = -1;
+      returnEntity.status = -3;
       returnEntity.message = 'not connected or register element group is empty';
     }
     // modbusClientRtu.disconnect();
@@ -452,20 +452,20 @@ class ModbusMaster extends IModbus {
         currentPackage: i + 1,
       );
       if (responseCode != ModbusResponseCode.requestSucceed) {
-        returnEntity.status = -1;
+        returnEntity.status = -3;
         returnEntity.message = responseCode.name;
         return returnEntity;
       }
       resultArr.addAll(ModbusElementsGroup(elementsGroupList[i]['group']).map((item) => item.value));
     }
-    if (resultArr.contains(null)) {
-      returnEntity.status = -3;
-      returnEntity.message = 'SCOM';
-      return returnEntity;
-    } else {
-      returnEntity.data = resultArr.join(',');
-      return returnEntity;
-    }
+    // if (resultArr.contains(null)) {
+    //   returnEntity.status = -3;
+    //   returnEntity.message = 'SCOM';
+    //   return returnEntity;
+    // } else {
+    returnEntity.data = resultArr.join(',');
+    return returnEntity;
+    // }
   }
 
   // 0x06
@@ -481,20 +481,20 @@ class ModbusMaster extends IModbus {
       currentPackage: 1,
     );
     if (responseCode != ModbusResponseCode.requestSucceed) {
-      returnEntity.status = -1;
+      returnEntity.status = -3;
       returnEntity.message = responseCode.name;
       return returnEntity;
     }
     resultArr.add(element.value);
 
-    if (resultArr.contains(null)) {
-      returnEntity.status = -3;
-      returnEntity.message = 'SCOM';
-      return returnEntity;
-    } else {
-      returnEntity.data = resultArr.join(',');
-      return returnEntity;
-    }
+    // if (resultArr.contains(null)) {
+    //   returnEntity.status = -3;
+    //   returnEntity.message = 'SCOM';
+    //   return returnEntity;
+    // } else {
+    returnEntity.data = resultArr.join(',');
+    return returnEntity;
+    // }
   }
 
   // 0x10
@@ -509,7 +509,7 @@ class ModbusMaster extends IModbus {
         currentPackage: i + 1,
       );
       if (responseCode != ModbusResponseCode.requestSucceed) {
-        returnEntity.status = -1;
+        returnEntity.status = -3;
         returnEntity.message = responseCode.name;
         return returnEntity;
       }
@@ -517,13 +517,13 @@ class ModbusMaster extends IModbus {
       // 多包连续发送返回错误码的概率30%-50%, 每包延迟发送，单包错误码概率降低到5%以下
       await Future.delayed(const Duration(milliseconds: 2));
     }
-    if (resultArr.contains(null)) {
-      returnEntity.status = -3;
-      returnEntity.message = 'SCOM';
-      return returnEntity;
-    } else {
-      returnEntity.data = resultArr.join(',');
-      return returnEntity;
-    }
+    // if (resultArr.contains(null)) {
+    //   returnEntity.status = -3;
+    //   returnEntity.message = 'SCOM';
+    //   return returnEntity;
+    // } else {
+    returnEntity.data = resultArr.join(',');
+    return returnEntity;
+    // }
   }
 }

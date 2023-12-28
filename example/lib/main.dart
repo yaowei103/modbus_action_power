@@ -16,6 +16,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late ModbusActionPower _modbusActionPowerPlugin;
+  late ModbusActionPower _modbusActionPowerPlugin485;
   String getTypeResultData = '';
   int getTime = 0;
   String setTypeResultData = '';
@@ -33,8 +34,10 @@ class _MyAppState extends State<MyApp> {
 
   init() async {
     await Files.copyFileToSupportDir([filePath, filePath485]);
-    _modbusActionPowerPlugin = ModbusActionPower(filePath: filePath, filePath485: filePath485);
+    _modbusActionPowerPlugin = ModbusActionPower(filePath: filePath);
     await _modbusActionPowerPlugin.initDone();
+    _modbusActionPowerPlugin485 = ModbusActionPower(filePath: filePath485);
+    await _modbusActionPowerPlugin485.initDone();
     setState(() {
       initDone = true;
       getTypeResultData = 'init done';
@@ -74,9 +77,9 @@ class _MyAppState extends State<MyApp> {
                       onPressed: initDone
                           ? () async {
                               final reqStopwatch = Stopwatch()..start();
-                              await _modbusActionPowerPlugin.getData(startRegAddr: '304', dataCount: '21');
-                              await _modbusActionPowerPlugin.getData(startRegAddr: '256', dataCount: '18');
-                              await _modbusActionPowerPlugin.getData485(startRegAddr: '0', dataCount: '6');
+                              // await _modbusActionPowerPlugin.getData(startRegAddr: '304', dataCount: '21');
+                              // await _modbusActionPowerPlugin.getData(startRegAddr: '256', dataCount: '18');
+                              // await _modbusActionPowerPlugin.getData(startRegAddr: '0', dataCount: '6');
                               var res = await _modbusActionPowerPlugin.getData(startRegAddr: '256', dataCount: '18'); // 3072_54
                               setState(() {
                                 getTime = reqStopwatch.elapsedMilliseconds;
@@ -200,7 +203,7 @@ class _MyAppState extends State<MyApp> {
                       onPressed: initDone
                           ? () async {
                               final reqStopwatch = Stopwatch()..start();
-                              var res = await _modbusActionPowerPlugin.getData485(startRegAddr: '0', dataCount: '6');
+                              var res = await _modbusActionPowerPlugin485.getData(startRegAddr: '0', dataCount: '6');
                               setState(() {
                                 getTime = reqStopwatch.elapsedMilliseconds;
                                 getTypeResultData = res.status == 0 ? res.data : res.message;
@@ -213,7 +216,7 @@ class _MyAppState extends State<MyApp> {
                       onPressed: initDone
                           ? () async {
                               final reqStopwatch = Stopwatch()..start();
-                              var res = await _modbusActionPowerPlugin.setData485(startRegAddr: '2304', serializableDat: '1');
+                              var res = await _modbusActionPowerPlugin485.setData(startRegAddr: '2304', serializableDat: '1');
                               setState(() {
                                 setTime = reqStopwatch.elapsedMilliseconds;
                                 setTypeResultData = res.status == 0 ? res.data : res.message;
@@ -226,7 +229,7 @@ class _MyAppState extends State<MyApp> {
                       onPressed: initDone
                           ? () async {
                               final reqStopwatch = Stopwatch()..start();
-                              var res = await _modbusActionPowerPlugin.setData485(startRegAddr: '2304', serializableDat: '0');
+                              var res = await _modbusActionPowerPlugin485.setData(startRegAddr: '2304', serializableDat: '0');
                               setState(() {
                                 setTime = reqStopwatch.elapsedMilliseconds;
                                 setTypeResultData = res.status == 0 ? res.data : res.message;

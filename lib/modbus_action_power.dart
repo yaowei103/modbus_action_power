@@ -6,15 +6,14 @@ export 'src/Files.dart';
 
 class ModbusActionPower {
   late ModbusMaster master;
-  late ModbusMaster master485;
 
   late Future<ReturnEntity> _initialization; // 延迟初始化一个Future对象
   ModbusActionPower._(); // 私有构造函数，用于工厂构造函数
 
-  factory ModbusActionPower({required String filePath, required String filePath485}) {
+  factory ModbusActionPower({required String filePath}) {
     final instance = ModbusActionPower._();
     // 在工厂构造函数中调用init方法并赋值给延迟初始化的Future对象
-    instance._initialization = instance.initModbus(filePath: filePath, filePath485: filePath485);
+    instance._initialization = instance.initModbus(filePath: filePath);
     return instance;
   }
 
@@ -22,12 +21,11 @@ class ModbusActionPower {
     return _initialization; // 返回延迟初始化的Future对象
   }
 
-  Future<ReturnEntity> initModbus({required String filePath, required String filePath485}) async {
+  Future<ReturnEntity> initModbus({required String filePath}) async {
     ReturnEntity returnEntity = ReturnEntity();
     try {
       master = ModbusMaster();
-      master485 = ModbusMaster();
-      await Future.wait([master.initMaster(filePath), master485.initMaster(filePath485)]);
+      await master.initMaster(filePath);
     } catch (e) {
       returnEntity.status = -1;
       returnEntity.message = 'init modbus error: ${e.toString()}';
@@ -41,10 +39,7 @@ class ModbusActionPower {
     if (master.modbusClientRtu.isConnected) {
       master.modbusClientRtu.disconnect();
     }
-    if (master485.modbusClientRtu.isConnected) {
-      master485.modbusClientRtu.disconnect();
-    }
-    if (!master.modbusClientRtu.isConnected && !master485.modbusClientRtu.isConnected) {
+    if (!master.modbusClientRtu.isConnected) {
       debugPrint('-----------------------disConnect done');
       returnEntity.status = 0;
     } else {
@@ -64,7 +59,7 @@ class ModbusActionPower {
     Stopwatch sw = Stopwatch()..start();
     debugPrint('===get $startRegAddr, $dataCount');
     ReturnEntity res = await master.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount, customTimeout: customTimeout); // 3072_54
-    debugPrint('===get $startRegAddr, result: ${res.status == 0 ? res.data : res.message}');
+    debugPrint('===get $startRegAddr, result: ${res.status == 0 ? res.data : res}');
     debugPrint('===get $startRegAddr, time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
   }
@@ -77,7 +72,7 @@ class ModbusActionPower {
     Stopwatch sw = Stopwatch()..start();
     debugPrint('===set $startRegAddr, $serializableDat');
     ReturnEntity res = await master.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat, customTimeout: customTimeout); // 3072_54
-    debugPrint('===set $startRegAddr, result: ${res.status == 0 ? res.data : res.message}');
+    debugPrint('===set $startRegAddr, result: ${res.status == 0 ? res.data : res}');
     debugPrint('===set $startRegAddr, time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
   }
@@ -87,7 +82,7 @@ class ModbusActionPower {
   Future<ReturnEntity> get2bData({required String objectName}) async {
     Stopwatch sw = Stopwatch()..start();
     ReturnEntity res = await master.get2bRegister(objectName: objectName);
-    debugPrint('===get 2b result:${res.status == 0 ? res.data : res.message}');
+    debugPrint('===get 2b result:${res.status == 0 ? res.data : res}');
     debugPrint('===get time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
   }
@@ -96,23 +91,23 @@ class ModbusActionPower {
   /// 获取飞梭数据
   /// String startRegAddr 起始地址
   /// String dataCount 寄存器个数
-  Future<ReturnEntity> getData485({required String startRegAddr, required String dataCount}) async {
-    Stopwatch sw = Stopwatch()..start();
-    ReturnEntity res = await master485.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount); // 3072_54
-    debugPrint('===get485 result:${res.status == 0 ? res.data : res.message}');
-    debugPrint('===get time: ${(sw..stop()).elapsedMilliseconds}');
-    return res;
-  }
+  // Future<ReturnEntity> getData485({required String startRegAddr, required String dataCount}) async {
+  //   Stopwatch sw = Stopwatch()..start();
+  //   ReturnEntity res = await master.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount); // 3072_54
+  //   debugPrint('===get485 result:${res.status == 0 ? res.data : res.message}');
+  //   debugPrint('===get time: ${(sw..stop()).elapsedMilliseconds}');
+  //   return res;
+  // }
 
   // 飞梭设置数据
   /// 设置飞梭数据
   /// String startRegAddr 起始地址
   /// String serializableDat 设置的数据
-  Future<ReturnEntity> setData485({required String startRegAddr, required String serializableDat}) async {
-    Stopwatch sw = Stopwatch()..start();
-    ReturnEntity res = await master485.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat); // 3072_54
-    debugPrint('===set485 $startRegAddr, $serializableDat result=====:${res.status == 0 ? res.data : res.message}');
-    debugPrint('===set time: ${(sw..stop()).elapsedMilliseconds}');
-    return res;
-  }
+  // Future<ReturnEntity> setData485({required String startRegAddr, required String serializableDat}) async {
+  //   Stopwatch sw = Stopwatch()..start();
+  //   ReturnEntity res = await master.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat); // 3072_54
+  //   debugPrint('===set485 $startRegAddr, $serializableDat result=====:${res.status == 0 ? res.data : res.message}');
+  //   debugPrint('===set time: ${(sw..stop()).elapsedMilliseconds}');
+  //   return res;
+  // }
 }
