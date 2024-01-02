@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:collection/collection.dart';
+import 'package:decimal/decimal.dart';
 
 import '../packages/modbus_client/modbus_client.dart';
 import '../entity/ReturnEntity.dart';
@@ -39,7 +40,7 @@ class Utils {
   // 10进制数字转Int16, Uint16, Uint32, Int32 的16进制
   static transformFrom10ToInt(double val, {required String type, double? resolution}) {
     if (type == 'float') {
-      int? decimalCount = resolution != null ? resolution.toString().split('.')[1].length : null;
+      int? decimalCount = resolution != null ? Utils.countDecimalPlaces(resolution) : null; //resolution.toString().split('.')[1].length : null;
       Float32List float32list = Float32List.fromList([decimalCount != null ? double.parse(val.toStringAsFixed(decimalCount)) : val]);
       Int32List int32list = Int32List.view(float32list.buffer);
       String hexValue = int32list[0].toRadixString(16);
@@ -242,5 +243,21 @@ class Utils {
     List<String> data = value.split('\u0000');
 
     return data.where((s) => s.isNotEmpty).toList();
+  }
+
+  /// 计算小数有几位小数位数
+  static int countDecimalPlaces(double number) {
+    Decimal decimal = Decimal.parse(number.toString());
+    String decimalString = decimal.toString();
+
+    RegExp decimalRegex = RegExp(r'\.(\d*)$');
+    RegExpMatch? match = decimalRegex.firstMatch(decimalString);
+
+    if (match != null && match.groupCount > 0) {
+      String decimalPart = match.group(1)!;
+      return decimalPart.length;
+    }
+
+    return 0;
   }
 }

@@ -278,6 +278,19 @@ class _MyAppState extends State<MyApp> {
                       },
                       child: const Text('数据错误'),
                     ),
+                    ElevatedButton(
+                      onPressed: initDone
+                          ? () async {
+                              final reqStopwatch = Stopwatch()..start();
+                              var res = await _modbusActionPowerPlugin.setData(startRegAddr: '13322', serializableDat: '0,0,0.0500000,1.0,1.0,0,50,0,0,0,0,0');
+                              setState(() {
+                                setTime = reqStopwatch.elapsedMilliseconds;
+                                setTypeResultData = res.status == 0 ? res.data : res.message;
+                              });
+                            }
+                          : null,
+                      child: const Text('set-13322'),
+                    ),
                   ],
                 ),
               ),
