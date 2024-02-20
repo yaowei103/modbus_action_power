@@ -48,12 +48,12 @@ abstract class IModbus {
   /// startRegName 更新寄存器起始含义
   /// serializableDat 待更新寄存器数据，数据以‘,’分割
   /// SetDatLength 下发数据长度，下发默认值时使用
-  Future<ReturnEntity> setRegisterByName({
-    required String index,
-    required String startRegName,
-    required String serializableDat,
-    int setDatLength = 0,
-  });
+  // Future<ReturnEntity> setRegisterByName({
+  //   required String index,
+  //   required String startRegName,
+  //   required String serializableDat,
+  //   int setDatLength = 0,
+  // });
 
   /// 通过寄存器地址从设备读取规定寄存器对应的实际物理量
   ///
@@ -71,11 +71,14 @@ abstract class IModbus {
   /// index 设备地址
   /// startRegName 首个寄存器名称
   /// dataCount 读取数据个数
-  Future<ReturnEntity> getRegisterByName({
-    required String index,
-    required String startRegName,
-    required String dataCount,
-  });
+  // Future<ReturnEntity> getRegisterByName({
+  //   required String index,
+  //   required String startRegName,
+  //   required String dataCount,
+  // });
+
+  // 2b 功能码
+  Future<ReturnEntity> get2bRegister({required String objectName});
 
 //   // 添加寄存器地址
 //   ReturnEntity addRegister(int index, String data);

@@ -17,7 +17,7 @@ class Files {
       Directory internalDir = await getApplicationSupportDirectory();
       String dir = internalDir.path;
       File file = File('$dir/$fileName');
-      await file.writeAsBytes(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+      await file.writeAsBytes(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes), flush: true);
       bool fileExist = await file.exists();
       if (fileExist) {
         returnEntity.status = 0;
@@ -92,7 +92,7 @@ class Files {
       Directory internalDir = await getApplicationSupportDirectory();
       String dir = internalDir.path;
       File file = File('$dir/$fileName');
-      await file.writeAsBytes(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+      await file.writeAsBytes(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes), flush: true);
     }
   }
 }

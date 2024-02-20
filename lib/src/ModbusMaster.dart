@@ -326,6 +326,7 @@ class ModbusMaster extends IModbus {
     return returnEntity;
   }
 
+  @override
   Future<ReturnEntity> get2bRegister({required String objectName}) async {
     var returnEntity = ReturnEntity();
     // modbusClientRtu.connect();
@@ -388,13 +389,6 @@ class ModbusMaster extends IModbus {
   }
 
   @override
-  Future<ReturnEntity> getRegisterByName({required String index, required String startRegName, required String dataCount}) async {
-    ReturnEntity returnEntity = ReturnEntity();
-
-    return returnEntity;
-  }
-
-  @override
   Future<ReturnEntity> setRegister({required String index, required String startRegAddr, required String serializableDat, Duration? customTimeout, int setDatLength = 0}) async {
     var returnEntity = ReturnEntity();
     List<String> reqArr = serializableDat.split(',').toList();
@@ -418,12 +412,6 @@ class ModbusMaster extends IModbus {
     }
     // modbusClientRtu.disconnect();
     return returnEntity;
-  }
-
-  @override
-  Future<ReturnEntity> setRegisterByName({required String index, required String startRegName, required String serializableDat, int setDatLength = 0}) {
-    // TODO: implement setRegisterByName
-    throw UnimplementedError();
   }
 
   Future<ModbusResponseCode> retrySinglePackage({required ModbusRequest request, Duration? customTimeout, int retry = 0, required int currentPackage}) async {
