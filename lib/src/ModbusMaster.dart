@@ -12,31 +12,16 @@ import '../entity/InfoRTU.dart';
 import '../packages/modbus_client/modbus_client.dart';
 import '../packages/modbus_client_serial/modbus_client_serial.dart';
 
-import 'Files.dart';
+import '../utils/Files.dart';
 
 class ModbusMaster extends IModbus {
   /// 含义名称加载信息
   final Map<String, (int, int)> _excelInfor2BName = {};
   // ModbusMasterType _masterType = ModbusMasterType.RTU;
 
-  /// 可表示的最小最大值
-  int intMinValue = -2147483648;
-  int intMaxValue = 2147483647;
-  int uint16MaxValue = 65535;
-  int uint32MaxValue = 4294967295;
-  int shortMinValue = -32768;
-  int shortMaxValue = 32767;
-  int ushortMaxValue = 65535;
-  double floatMinValue = double.parse('-3.40282347E+38');
-  double floatMaxValue = double.parse('3.40282347E+38');
-  double doubleMinValue = double.parse('-1.7976931348623157E+308');
-  double doubleMaxValue = double.parse('1.7976931348623157E+308');
-
-  /// 重写后新增 start
   late InfoRTU infoRTU;
   Map<int, ExcelInfor> excelInfoAll = {};
   late ModbusClientSerialRtu modbusClientRtu;
-  late ModbusClientSerialAscii modbusClientSerialAscii;
   String filePath = '';
   String fileName = ''; // modbus 协议配置文件名称
   String toFilePath = '';
@@ -44,12 +29,13 @@ class ModbusMaster extends IModbus {
   List<String> configSheetNames = ["Modbus-TCP", "Modbus-RTU", "TCP通讯设置", "RTU通讯设置", "大小端配置", "设备信息"];
   int maxRetry = 5;
 
+  /// init master之前，调用Files.copyFileToSupportDir,将modbus协议文件copy到supportDir，
+  /// 然后直接从getApplicationSupportDirectory目录读取
   Future<ReturnEntity> initMaster(String filePathStr) async {
     var stopwatchInit = Stopwatch()..start();
     var returnEntity = ReturnEntity();
     filePath = filePathStr;
     fileName = filePathStr.split('/').last;
-    // init master之前，调用Files.copyFileToSupportDir,将modbus协议文件copy到supportDir， 然后直接从getApplicationSupportDirectory目录读取
     // var readComFileResult = await readComFileInfo();
     var readComFileResult = await readComFileInfo1();
     if (readComFileResult.status != 0) {
@@ -73,8 +59,6 @@ class ModbusMaster extends IModbus {
     return returnEntity;
   }
 
-  /// 重写后新增 end
-
   /// 加载协议
   /// <param name="protocol1">协议文件全路径</param>
   @override
@@ -90,15 +74,12 @@ class ModbusMaster extends IModbus {
     return returnEntity;
   }
 
-  //#region 读协议与清除协议字典信息
+  // 读协议与清除协议字典信息
   int pageNum = 0; //页签索引页，用于故障上报索引
   String pageName = "";
   int rowNum = 0; //行索引，用于故障上报索引
   int keyType = 0; //确认地址/名称的键值重复定位，用于故障上报索引
-  /// <summary>
-  /// 读取协议文件，并检查协议文件正确性
-  /// </summary>
-  /// <returns></returns>
+
   Future<ReturnEntity> readComFileInfo1() async {
     ReturnEntity returnEntity = ReturnEntity(); //异常信息返回对象
     try {
@@ -135,7 +116,7 @@ class ModbusMaster extends IModbus {
         } else {
           List<String> rowString = excel.tables[pageName]!.rows[0].map((e) => e.toString()).toList(); //读取本Sheet页首行信息，从而得到它支持的功能码
           String char = '码';
-          List<String> sArray = rowString[0].split(char); // 一定是单引
+          List<String> sArray = rowString[0].split(char);
           String functionCode = sArray.last.toLowerCase(); //得到功能码信息
           List<String?> currentSheetFunctionCode = List.from(['0x03', '0x06', '0x10', '0x2b'].map((e) {
             if (functionCode.contains(e)) {
@@ -352,42 +333,6 @@ class ModbusMaster extends IModbus {
     return returnEntity;
   }
 
-  retryGet2bRequest({required int deviceId, required int objectId, required int length, int tryTimes = 0}) {
-    int resAllLength = length + 8 + 2;
-    ReturnEntity returnEntity = ReturnEntity(
-      data: Uint8List(resAllLength),
-    );
-
-    var pdu = Uint8List(5);
-    ByteData.view(pdu.buffer)
-      ..setUint8(0, 0x01) // 从机地址
-      ..setUint8(1, 0x2b) //2B 功能码
-      ..setUint8(2, 0x0e) // MEI类型 0E
-      ..setUint8(3, deviceId) // 读设备ID码
-      ..setUint8(4, objectId); // 对象ID
-
-    var crcMsg = ModbusClientSerialRtu.computeCRC16(pdu);
-    var pduWithCrc = Uint8List.fromList([...(pdu.toList()), ...(crcMsg.toList())]);
-
-    modbusClientRtu.serialPort!.write(pduWithCrc, timeout: modbusClientRtu.responseTimeout.inMilliseconds);
-    returnEntity.data = modbusClientRtu.serialPort!.read(resAllLength, timeout: modbusClientRtu.responseTimeout.inMilliseconds); // modbusClientRtu.responseTimeout.inMilliseconds
-    if (returnEntity.data.isEmpty) {
-      returnEntity.status = -3;
-      returnEntity.message = 'Serial port connection error';
-      return returnEntity;
-    }
-    bool checkCrcResult = Utils.check2bDataCrc(returnEntity.data);
-    if (!checkCrcResult && tryTimes < maxRetry) {
-      return retryGet2bRequest(deviceId: deviceId, objectId: objectId, length: length);
-    } else if (!checkCrcResult && tryTimes >= maxRetry) {
-      returnEntity.status = -1;
-      returnEntity.data = Uint8List(resAllLength);
-      returnEntity.message = 'get data error';
-      return returnEntity;
-    }
-    return returnEntity;
-  }
-
   @override
   Future<ReturnEntity> setRegister({required String index, required String startRegAddr, required String serializableDat, Duration? customTimeout, int setDatLength = 0}) async {
     var returnEntity = ReturnEntity();
@@ -411,6 +356,42 @@ class ModbusMaster extends IModbus {
       returnEntity.message = 'not connected or register element group is empty';
     }
     // modbusClientRtu.disconnect();
+    return returnEntity;
+  }
+
+  ReturnEntity retryGet2bRequest({required int deviceId, required int objectId, required int length, int tryTimes = 0}) {
+    int resAllLength = length + 8 + 2;
+    ReturnEntity returnEntity = ReturnEntity(
+      data: Uint8List(resAllLength),
+    );
+
+    var pdu = Uint8List(5);
+    ByteData.view(pdu.buffer)
+      ..setUint8(0, 0x01) // 从机地址
+      ..setUint8(1, 0x2b) // 2B 功能码
+      ..setUint8(2, 0x0e) // MEI类型 0E
+      ..setUint8(3, deviceId) // 读设备ID码
+      ..setUint8(4, objectId); // 对象ID
+
+    var crcMsg = ModbusClientSerialRtu.computeCRC16(pdu);
+    var pduWithCrc = Uint8List.fromList([...(pdu.toList()), ...(crcMsg.toList())]);
+
+    modbusClientRtu.serialPort!.write(pduWithCrc, timeout: modbusClientRtu.responseTimeout.inMilliseconds);
+    returnEntity.data = modbusClientRtu.serialPort!.read(resAllLength, timeout: modbusClientRtu.responseTimeout.inMilliseconds);
+    if (returnEntity.data.isEmpty) {
+      returnEntity.status = -3;
+      returnEntity.message = 'Serial port connection error';
+      return returnEntity;
+    }
+    bool checkCrcResult = Utils.check2bDataCrc(returnEntity.data);
+    if (!checkCrcResult && tryTimes < maxRetry) {
+      return retryGet2bRequest(deviceId: deviceId, objectId: objectId, length: length);
+    } else if (!checkCrcResult && tryTimes >= maxRetry) {
+      returnEntity.status = -1;
+      returnEntity.data = Uint8List(resAllLength);
+      returnEntity.message = 'get 2b data error';
+      return returnEntity;
+    }
     return returnEntity;
   }
 
@@ -445,14 +426,9 @@ class ModbusMaster extends IModbus {
       }
       resultArr.addAll(ModbusElementsGroup(elementsGroupList[i]['group']).map((item) => item.value));
     }
-    // if (resultArr.contains(null)) {
-    //   returnEntity.status = -3;
-    //   returnEntity.message = 'SCOM';
-    //   return returnEntity;
-    // } else {
+
     returnEntity.data = resultArr.join(',');
     return returnEntity;
-    // }
   }
 
   // 0x06
@@ -474,14 +450,8 @@ class ModbusMaster extends IModbus {
     }
     resultArr.add(element.value);
 
-    // if (resultArr.contains(null)) {
-    //   returnEntity.status = -3;
-    //   returnEntity.message = 'SCOM';
-    //   return returnEntity;
-    // } else {
     returnEntity.data = resultArr.join(',');
     return returnEntity;
-    // }
   }
 
   // 0x10
@@ -504,13 +474,7 @@ class ModbusMaster extends IModbus {
       // 多包连续发送返回错误码的概率30%-50%, 每包延迟发送，单包错误码概率降低到5%以下
       await Future.delayed(const Duration(milliseconds: 2));
     }
-    // if (resultArr.contains(null)) {
-    //   returnEntity.status = -3;
-    //   returnEntity.message = 'SCOM';
-    //   return returnEntity;
-    // } else {
     returnEntity.data = resultArr.join(',');
     return returnEntity;
-    // }
   }
 }

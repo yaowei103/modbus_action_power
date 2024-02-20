@@ -2,7 +2,7 @@ import 'package:modbus_action_power/src/ModbusMaster.dart';
 import 'package:modbus_action_power/entity/ReturnEntity.dart';
 import 'package:modbus_action_power/utils/Utils.dart';
 export 'entity/ReturnEntity.dart';
-export 'src/Files.dart';
+export 'utils/Files.dart';
 
 class ModbusActionPower {
   late ModbusMaster master;
@@ -77,7 +77,7 @@ class ModbusActionPower {
     return res;
   }
 
-  /// 2b功能码下发数据
+  /// 2b功能码获取数据
   /// String objectName 对象名称
   Future<ReturnEntity> get2bData({required String objectName}) async {
     Stopwatch sw = Stopwatch()..start();
@@ -86,28 +86,4 @@ class ModbusActionPower {
     Utils.log('===get 2b time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
   }
-
-  // 飞梭获取数据
-  /// 获取飞梭数据
-  /// String startRegAddr 起始地址
-  /// String dataCount 寄存器个数
-  // Future<ReturnEntity> getData485({required String startRegAddr, required String dataCount}) async {
-  //   Stopwatch sw = Stopwatch()..start();
-  //   ReturnEntity res = await master.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount); // 3072_54
-  //   Utils.log('===get485 result:${res.status == 0 ? res.data : res.message}');
-  //   Utils.log('===get time: ${(sw..stop()).elapsedMilliseconds}');
-  //   return res;
-  // }
-
-  // 飞梭设置数据
-  /// 设置飞梭数据
-  /// String startRegAddr 起始地址
-  /// String serializableDat 设置的数据
-  // Future<ReturnEntity> setData485({required String startRegAddr, required String serializableDat}) async {
-  //   Stopwatch sw = Stopwatch()..start();
-  //   ReturnEntity res = await master.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat); // 3072_54
-  //   Utils.log('===set485 $startRegAddr, $serializableDat result=====:${res.status == 0 ? res.data : res.message}');
-  //   Utils.log('===set time: ${(sw..stop()).elapsedMilliseconds}');
-  //   return res;
-  // }
 }
