@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:modbus_action_power/src/ModbusMaster.dart';
 import 'package:modbus_action_power/entity/ReturnEntity.dart';
+import 'package:modbus_action_power/utils/Utils.dart';
 export 'entity/ReturnEntity.dart';
 export 'src/Files.dart';
 
@@ -30,7 +30,7 @@ class ModbusActionPower {
       returnEntity.status = -1;
       returnEntity.message = 'init modbus error: ${e.toString()}';
     }
-    debugPrint('init success');
+    Utils.log('init success');
     return returnEntity;
   }
 
@@ -40,10 +40,10 @@ class ModbusActionPower {
       master.modbusClientRtu.disconnect();
     }
     if (!master.modbusClientRtu.isConnected) {
-      debugPrint('-----------------------disConnect done');
+      Utils.log('disConnect done');
       returnEntity.status = 0;
     } else {
-      debugPrint('-----------------------disConnect error, please retry----');
+      Utils.log('disConnect error, please retry----');
       returnEntity.status = -1;
       returnEntity.message = 'disConnect error, try again!';
     }
@@ -57,10 +57,10 @@ class ModbusActionPower {
   Future<ReturnEntity> getData({required String startRegAddr, required String dataCount, Duration? customTimeout}) async {
     // req_21504_3001
     Stopwatch sw = Stopwatch()..start();
-    debugPrint('===get $startRegAddr, $dataCount');
+    Utils.log('===get $startRegAddr, $dataCount');
     ReturnEntity res = await master.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount, customTimeout: customTimeout); // 3072_54
-    debugPrint('===get $startRegAddr, result: ${res.status == 0 ? res.data : res}');
-    debugPrint('===get $startRegAddr, time: ${(sw..stop()).elapsedMilliseconds}');
+    Utils.log('===get $startRegAddr, result: ${res.status == 0 ? res.data : res}');
+    Utils.log('===get $startRegAddr, time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
   }
 
@@ -70,10 +70,10 @@ class ModbusActionPower {
   /// Duration customTimeout 单包超时时间
   Future<ReturnEntity> setData({required String startRegAddr, required String serializableDat, Duration? customTimeout}) async {
     Stopwatch sw = Stopwatch()..start();
-    debugPrint('===set $startRegAddr, $serializableDat');
+    Utils.log('===set $startRegAddr, $serializableDat');
     ReturnEntity res = await master.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat, customTimeout: customTimeout); // 3072_54
-    debugPrint('===set $startRegAddr, result: ${res.status == 0 ? res.data : res}');
-    debugPrint('===set $startRegAddr, time: ${(sw..stop()).elapsedMilliseconds}');
+    Utils.log('===set $startRegAddr, result: ${res.status == 0 ? res.data : res}');
+    Utils.log('===set $startRegAddr, time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
   }
 
@@ -82,8 +82,8 @@ class ModbusActionPower {
   Future<ReturnEntity> get2bData({required String objectName}) async {
     Stopwatch sw = Stopwatch()..start();
     ReturnEntity res = await master.get2bRegister(objectName: objectName);
-    debugPrint('===get 2b result:${res.status == 0 ? res.data : res}');
-    debugPrint('===get time: ${(sw..stop()).elapsedMilliseconds}');
+    Utils.log('===get 2b result:${res.status == 0 ? res.data : res}');
+    Utils.log('===get 2b time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
   }
 
@@ -94,8 +94,8 @@ class ModbusActionPower {
   // Future<ReturnEntity> getData485({required String startRegAddr, required String dataCount}) async {
   //   Stopwatch sw = Stopwatch()..start();
   //   ReturnEntity res = await master.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount); // 3072_54
-  //   debugPrint('===get485 result:${res.status == 0 ? res.data : res.message}');
-  //   debugPrint('===get time: ${(sw..stop()).elapsedMilliseconds}');
+  //   Utils.log('===get485 result:${res.status == 0 ? res.data : res.message}');
+  //   Utils.log('===get time: ${(sw..stop()).elapsedMilliseconds}');
   //   return res;
   // }
 
@@ -106,8 +106,8 @@ class ModbusActionPower {
   // Future<ReturnEntity> setData485({required String startRegAddr, required String serializableDat}) async {
   //   Stopwatch sw = Stopwatch()..start();
   //   ReturnEntity res = await master.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat); // 3072_54
-  //   debugPrint('===set485 $startRegAddr, $serializableDat result=====:${res.status == 0 ? res.data : res.message}');
-  //   debugPrint('===set time: ${(sw..stop()).elapsedMilliseconds}');
+  //   Utils.log('===set485 $startRegAddr, $serializableDat result=====:${res.status == 0 ? res.data : res.message}');
+  //   Utils.log('===set time: ${(sw..stop()).elapsedMilliseconds}');
   //   return res;
   // }
 }

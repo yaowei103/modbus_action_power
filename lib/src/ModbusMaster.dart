@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 // import 'package:excel/excel.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:modbus_action_power/src/IModbus.dart';
 import 'package:modbus_action_power/entity/ReturnEntity.dart';
@@ -54,7 +53,7 @@ class ModbusMaster extends IModbus {
     // var readComFileResult = await readComFileInfo();
     var readComFileResult = await readComFileInfo1();
     if (readComFileResult.status != 0) {
-      debugPrint(readComFileResult.message);
+      Utils.log(readComFileResult.message);
       return readComFileResult;
     }
     modbusClientRtu = ModbusClientSerialRtu(
@@ -69,7 +68,7 @@ class ModbusMaster extends IModbus {
       responseTimeout: Duration(milliseconds: int.parse(infoRTU.timeout)),
     );
     modbusClientRtu.connect();
-    debugPrint('init modbus done!, time: ${(stopwatchInit..stop()).elapsedMilliseconds}');
+    Utils.log('init modbus done!, time: ${(stopwatchInit..stop()).elapsedMilliseconds}');
 
     return returnEntity;
   }
@@ -118,7 +117,7 @@ class ModbusMaster extends IModbus {
       List<String> list = excel.tables.keys.toList(); //获取协议所有页签
       //获取通信对象及通信规约类型
       if (list.contains("Modbus-TCP")) {
-        debugPrint('读取Modbus-TCP配置');
+        Utils.log('读取Modbus-TCP配置');
       } else if (list.contains("Modbus-RTU")) {
         SpreadsheetTable dt = excel.tables['Modbus-RTU']!;
         // _masterType = ModbusMasterType.RTU;
@@ -146,7 +145,7 @@ class ModbusMaster extends IModbus {
           Stopwatch sw = Stopwatch()..start();
           var dt = excel.tables[pageName]!;
           sw.stop();
-          debugPrint("Work done! Sheet $pageName used time: ${sw.elapsedMicroseconds}ms.");
+          Utils.log("Work done! Sheet $pageName used time: ${sw.elapsedMicroseconds}ms.");
 
           // 全部功能码数据start
           // 单个重复区数据
@@ -250,7 +249,7 @@ class ModbusMaster extends IModbus {
         for (int i = 2; i < dt.rows.length; i++) {
           rowNum = i;
           if (rowNum == 195) {
-            debugPrint('error: $rowNum');
+            Utils.log('error: $rowNum');
           }
           try {
             if (dt.rows[i][0].toString() != "" && dt.rows[i][0].toString() != "…") {
@@ -283,7 +282,7 @@ class ModbusMaster extends IModbus {
       }
     } catch (ex) {
       // Excel.Close();//解除占用
-      debugPrint('----error: ${ex.toString()}');
+      Utils.log('---error: ${ex.toString()}');
       Files.DeleteFile(toFilePath);
 
       if (ex.toString().contains("已添加了具有相同键的项") && keyType == 0) {
@@ -432,7 +431,7 @@ class ModbusMaster extends IModbus {
     if (responseCode == ModbusResponseCode.requestSucceed) {
       return responseCode;
     } else if (retry < maxRetry) {
-      debugPrint('--重发 第$currentPackage包第${retry + 1}次, $responseCode');
+      Utils.log('---重发 第$currentPackage包第${retry + 1}次, $responseCode');
       await Future.delayed(const Duration(milliseconds: 2));
       return retrySinglePackage(request: request, customTimeout: customTimeout, retry: retry + 1, currentPackage: currentPackage);
     } else {
@@ -444,7 +443,7 @@ class ModbusMaster extends IModbus {
   Future<ReturnEntity> getRequest03({required List<Map<String, dynamic>> elementsGroupList, Duration? customTimeout}) async {
     var returnEntity = ReturnEntity();
     List resultArr = [];
-    debugPrint('===包数量：${elementsGroupList.length}');
+    Utils.log('===包数量：${elementsGroupList.length}');
     for (int i = 0; i < elementsGroupList.length; i++) {
       ModbusResponseCode responseCode = await retrySinglePackage(
         request: ModbusElementsGroup(elementsGroupList[i]['group']).getReadRequest(),
@@ -501,7 +500,7 @@ class ModbusMaster extends IModbus {
   Future<ReturnEntity> setRequest10({required List<Map<String, dynamic>> elementsGroupList, required String serializableDat, Duration? customTimeout}) async {
     var returnEntity = ReturnEntity();
     List resultArr = [];
-    debugPrint('===包数量：${elementsGroupList.length}');
+    Utils.log('===包数量：${elementsGroupList.length}');
     for (int i = 0; i < elementsGroupList.length; i++) {
       ModbusResponseCode responseCode = await retrySinglePackage(
         request: ModbusElementsGroup(elementsGroupList[i]['group']).getWriteRequest(elementsGroupList[i]['data'], rawValue: true),

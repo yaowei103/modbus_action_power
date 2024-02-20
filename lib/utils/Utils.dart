@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:developer' as developer;
 import 'package:collection/collection.dart';
 import 'package:decimal/decimal.dart';
 
@@ -259,5 +260,10 @@ class Utils {
     }
 
     return 0;
+  }
+
+  /// 打印日志
+  static void log(String? value) {
+    developer.log(value ?? 'default error, no error message', time: DateTime.now(), name: 'MODBUS');
   }
 }
