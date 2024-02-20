@@ -263,7 +263,12 @@ class Utils {
   }
 
   /// 打印日志
-  static void log(String? value) {
-    developer.log(value ?? 'default error, no error message', time: DateTime.now(), name: 'MODBUS');
+  static void log(String? text, {String? name, bool? showStackTrace}) {
+    developer.log(
+      text ?? 'default modbus error, no error message',
+      time: DateTime.now(),
+      name: 'MODBUS',
+      stackTrace: (showStackTrace ?? false) ? StackTrace.current : null,
+    );
   }
 }
