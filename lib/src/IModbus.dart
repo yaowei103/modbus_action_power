@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -9,7 +11,7 @@ import '../entity/InfoRTU.dart';
 import '../packages/modbus_client_serial/modbus_client_serial.dart';
 
 import '../entity/ReturnEntity.dart';
-import '../utils/Files.dart';
+import '../utils/ModbusFiles.dart';
 import '../utils/Utils.dart';
 
 enum ModbusMasterType {
@@ -61,7 +63,6 @@ abstract class IModbus {
   int pageNum = 0; //页签索引页，用于故障上报索引
   String pageName = "";
   int rowNum = 0; //行索引，用于故障上报索引
-  int keyType = 0; //确认地址/名称的键值重复定位，用于故障上报索引
 
   Future<ReturnEntity> initMaster(String filePathStr);
 
@@ -73,7 +74,6 @@ abstract class IModbus {
     required String index,
     required String startRegAddr,
     required String serializableDat,
-    int setDatLength = 0,
   });
 
   /// index 设备索引号
@@ -137,7 +137,6 @@ abstract class IModbus {
       //int[] ErrorCode = { -16449008, -16449007 };
       //将各个sheet数据加载到对应字典中，key为地址
       for (int pagenum = 0; pagenum < list.length; pagenum++) {
-        keyType = 0;
         pageNum = pagenum;
         pageName = list[pagenum];
         List<String> notDataSheets = ["Modbus-TCP", "Modbus-RTU", "TCP通讯设置", "RTU通讯设置", "大小端配置", "设备信息"];
@@ -296,10 +295,10 @@ abstract class IModbus {
               } else {
                 value2 = int.parse(dt.rows[i][4].toString());
               }
-              late (int, int) tempinfoname;
+              late (int, int) tempInfoName;
               if (dt.rows[i][1].toString() != "") {
-                tempinfoname = (value1, value2);
-                excelInfo2BName[dt.rows[i][1].toString()] = tempinfoname;
+                tempInfoName = (value1, value2);
+                excelInfo2BName[dt.rows[i][1].toString()] = tempInfoName;
               }
             }
             if (dt.rows[i][0].toString() == "…") {
@@ -322,15 +321,6 @@ abstract class IModbus {
       Utils.log('---error: ${ex.toString()}');
       ModbusFiles.DeleteFile(toFilePath);
 
-      if (ex.toString().contains("已添加了具有相同键的项") && keyType == 0) {
-        //地址重复
-        returnEntity.status = (-16448988 + pageNum);
-      } else if (ex.toString().contains("已添加了具有相同键的项") && keyType == 1) {
-        //名称重复
-        returnEntity.status = -16448968 + pageNum;
-      } else {
-        returnEntity.status = -16449010;
-      }
       returnEntity.message = "协议加载异常：$pageName页${rowNum + 1}行：$ex";
     }
 
@@ -386,37 +376,31 @@ abstract class IModbus {
   // 发送单包数据
   Future<ModbusResponseCode> retrySinglePackage({
     required ModbusRequest request,
-    Duration? customTimeout,
     int retry = 0,
     required int currentPackage,
     required ModbusClientSerialRtu modbusClientRtu,
     required int maxRetry,
   }) async {
-    ModbusResponseCode responseCode = await modbusClientRtu.send(request, customTimeout);
+    ModbusResponseCode responseCode = await modbusClientRtu.send(request);
     if (responseCode == ModbusResponseCode.requestSucceed) {
       return responseCode;
     } else if (retry < maxRetry) {
       Utils.log('---重发 第$currentPackage包第${retry + 1}次, $responseCode');
       await Future.delayed(const Duration(milliseconds: 2));
-      return retrySinglePackage(
-          request: request, customTimeout: customTimeout, retry: retry + 1, currentPackage: currentPackage, modbusClientRtu: modbusClientRtu, maxRetry: maxRetry);
+      return retrySinglePackage(request: request, retry: retry + 1, currentPackage: currentPackage, modbusClientRtu: modbusClientRtu, maxRetry: maxRetry);
     } else {
       return responseCode;
     }
   }
 
   // 0x03
-  Future<ReturnEntity> getRequest03({
-    required List<Map<String, dynamic>> elementsGroupList,
-    Duration? customTimeout,
-  }) async {
+  Future<ReturnEntity> getRequest03({required List<Map<String, dynamic>> elementsGroupList}) async {
     var returnEntity = ReturnEntity();
     List resultArr = [];
     Utils.log('===包数量：${elementsGroupList.length}');
     for (int i = 0; i < elementsGroupList.length; i++) {
       ModbusResponseCode responseCode = await retrySinglePackage(
         request: ModbusElementsGroup(elementsGroupList[i]['group']).getReadRequest(),
-        customTimeout: customTimeout,
         currentPackage: i + 1,
         modbusClientRtu: modbusClientRtu,
         maxRetry: maxRetry,
@@ -437,7 +421,6 @@ abstract class IModbus {
   Future<ReturnEntity> setRequest06({
     required List<Map<String, dynamic>> elementsGroupList,
     required String serializableDat,
-    Duration? customTimeout,
     int? tryTimes,
   }) async {
     var returnEntity = ReturnEntity();
@@ -447,7 +430,6 @@ abstract class IModbus {
     var data = elementsGroupList[0]['data'][0];
     ModbusResponseCode responseCode = await retrySinglePackage(
       request: element.getWriteRequest(data, rawValue: true),
-      customTimeout: customTimeout,
       currentPackage: 1,
       modbusClientRtu: modbusClientRtu,
       maxRetry: maxRetry,
@@ -467,7 +449,6 @@ abstract class IModbus {
   Future<ReturnEntity> setRequest10({
     required List<Map<String, dynamic>> elementsGroupList,
     required String serializableDat,
-    Duration? customTimeout,
   }) async {
     var returnEntity = ReturnEntity();
     List resultArr = [];
@@ -475,7 +456,6 @@ abstract class IModbus {
     for (int i = 0; i < elementsGroupList.length; i++) {
       ModbusResponseCode responseCode = await retrySinglePackage(
         request: ModbusElementsGroup(elementsGroupList[i]['group']).getWriteRequest(elementsGroupList[i]['data'], rawValue: true),
-        customTimeout: customTimeout,
         currentPackage: i + 1,
         modbusClientRtu: modbusClientRtu,
         maxRetry: maxRetry,

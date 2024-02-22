@@ -40,7 +40,7 @@ class ModbusMaster extends IModbus {
   }
 
   @override
-  Future<ReturnEntity> getRegister({required String index, required String startRegAddr, required String dataCount, Duration? customTimeout}) async {
+  Future<ReturnEntity> getRegister({required String index, required String startRegAddr, required String dataCount}) async {
     // excelInfoAll[99999999] = ExcelInfo(
     //   meaning: '无此地址',
     //   type: 'int16',
@@ -56,10 +56,7 @@ class ModbusMaster extends IModbus {
     }
     // modbusClientRtu.connect();
     if (modbusClientRtu.isConnected) {
-      returnEntity = await getRequest03(
-        elementsGroupList: getRequestList.data!,
-        customTimeout: customTimeout ?? const Duration(milliseconds: 500),
-      );
+      returnEntity = await getRequest03(elementsGroupList: getRequestList.data!);
     } else {
       returnEntity.status = -1;
       returnEntity.message = 'not connected or register element group is empty';
@@ -69,7 +66,7 @@ class ModbusMaster extends IModbus {
   }
 
   @override
-  Future<ReturnEntity> setRegister({required String index, required String startRegAddr, required String serializableDat, Duration? customTimeout, int setDatLength = 0}) async {
+  Future<ReturnEntity> setRegister({required String index, required String startRegAddr, required String serializableDat}) async {
     var returnEntity = ReturnEntity();
     List<String> reqArr = serializableDat.split(',').toList();
 
@@ -87,12 +84,10 @@ class ModbusMaster extends IModbus {
           ? setRequest06(
               elementsGroupList: getRequestList.data!,
               serializableDat: serializableDat,
-              customTimeout: customTimeout ?? const Duration(milliseconds: 500),
             )
           : setRequest10(
               elementsGroupList: getRequestList.data!,
               serializableDat: serializableDat,
-              customTimeout: customTimeout ?? const Duration(milliseconds: 500),
             ));
     } else {
       returnEntity.status = -3;

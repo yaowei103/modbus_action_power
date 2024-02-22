@@ -2,7 +2,7 @@ import 'package:modbus_action_power/src/ModbusMaster.dart';
 import 'package:modbus_action_power/entity/ReturnEntity.dart';
 import 'package:modbus_action_power/utils/Utils.dart';
 export 'entity/ReturnEntity.dart';
-export 'utils/Files.dart';
+export 'utils/ModbusFiles.dart';
 
 class ModbusActionPower {
   late ModbusMaster master;
@@ -53,12 +53,11 @@ class ModbusActionPower {
   /// 03功能码获取数据
   /// String startRegAddr 起始地址
   /// String dataCount 寄存器个数
-  /// Duration customTimeout 单包超时时间
-  Future<ReturnEntity> getData({required String startRegAddr, required String dataCount, Duration? customTimeout}) async {
+  Future<ReturnEntity> getData({required String startRegAddr, required String dataCount}) async {
     // req_21504_3001
     Stopwatch sw = Stopwatch()..start();
     Utils.log('===get $startRegAddr, $dataCount');
-    ReturnEntity res = await master.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount, customTimeout: customTimeout); // 3072_54
+    ReturnEntity res = await master.getRegister(index: '1', startRegAddr: startRegAddr, dataCount: dataCount); // 3072_54
     Utils.log('===get $startRegAddr, result: ${res.status == 0 ? res.data : res}');
     Utils.log('===get $startRegAddr, time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
@@ -67,11 +66,10 @@ class ModbusActionPower {
   /// 06/10功能码下发数据
   /// String startRegAddr 起始地址
   /// String serializableDat：发送的数据 eg. 1,2,3,4
-  /// Duration customTimeout 单包超时时间
-  Future<ReturnEntity> setData({required String startRegAddr, required String serializableDat, Duration? customTimeout}) async {
+  Future<ReturnEntity> setData({required String startRegAddr, required String serializableDat}) async {
     Stopwatch sw = Stopwatch()..start();
     Utils.log('===set $startRegAddr, $serializableDat');
-    ReturnEntity res = await master.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat, customTimeout: customTimeout); // 3072_54
+    ReturnEntity res = await master.setRegister(index: '1', startRegAddr: startRegAddr, serializableDat: serializableDat); // 3072_54
     Utils.log('===set $startRegAddr, result: ${res.status == 0 ? res.data : res}');
     Utils.log('===set $startRegAddr, time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
