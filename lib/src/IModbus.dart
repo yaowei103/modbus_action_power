@@ -313,14 +313,14 @@ abstract class IModbus {
       }
 
       // Excel.Close();//解除占用
-      returnEntity = Files.DeleteFile(toFilePath);
+      returnEntity = ModbusFiles.DeleteFile(toFilePath);
       if (returnEntity.status != 0) {
         return returnEntity;
       }
     } catch (ex) {
       // Excel.Close();//解除占用
       Utils.log('---error: ${ex.toString()}');
-      Files.DeleteFile(toFilePath);
+      ModbusFiles.DeleteFile(toFilePath);
 
       if (ex.toString().contains("已添加了具有相同键的项") && keyType == 0) {
         //地址重复

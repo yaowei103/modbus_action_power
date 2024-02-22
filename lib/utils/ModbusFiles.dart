@@ -5,7 +5,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../entity/ReturnEntity.dart';
 
-class Files {
+class ModbusFiles {
   static Future<ReturnEntity> copyFileToLocal(String fromFilePath, String toFilePath) async {
     ReturnEntity returnEntity = ReturnEntity();
     try {

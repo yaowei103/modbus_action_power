@@ -23,7 +23,7 @@ class _MyAppState extends State<MyApp> {
   int setTime = 0;
   bool initDone = false;
 
-  String filePath = 'assets/ppmDCModbus.xlsx';
+  String filePath = 'assets/pre20Modbus.xlsx'; //'assets/ppmDCModbus.xlsx';
   String filePath485 = 'assets/DisplayControl.xlsx';
 
   @override
@@ -33,7 +33,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   init() async {
-    await Files.copyFileToSupportDir([filePath, filePath485]);
+    await ModbusFiles.copyFileToSupportDir([filePath, filePath485]);
     _modbusActionPowerPlugin = ModbusActionPower(filePath: filePath);
     await _modbusActionPowerPlugin.initDone();
     _modbusActionPowerPlugin485 = ModbusActionPower(filePath: filePath485);
