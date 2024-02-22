@@ -67,7 +67,7 @@ class Utils {
   // element 分包
   static ReturnEntity<List<Map<String, dynamic>>?> getElementsGroup(
     String startRegAddr,
-    Map<int, ExcelInfor> excelInfoAll, {
+    Map<int, ExcelInfo> excelInfoAll, {
     int? dataCount,
     List<String>? serializableDat,
   }) {
@@ -92,7 +92,7 @@ class Utils {
     /// 请求数据分包
     List<dynamic> cacheDataArr = [];
     do {
-      ExcelInfor? currentAddressConfig = excelInfoAll[currentAddress];
+      ExcelInfo? currentAddressConfig = excelInfoAll[currentAddress];
       String? excelAddressType = currentAddressConfig?.type;
       double? resolution = currentAddressConfig?.resolution;
       if (currentAddressConfig != null && excelAddressType != null && excelAddressType != 'null') {

@@ -70,39 +70,47 @@ class ReadFileInfo {
   });
 }
 
-class ExcelInfor {
+class ExcelInfo {
   String? meaning;
   String? type;
   String? unit;
   double? resolution;
   double? min;
   double? max;
-  String? dafaultVal;
+  String? defaultVal;
   List<String?>? functionCode;
 
-  ExcelInfor({
+  ExcelInfo({
     this.meaning,
     this.type,
     this.unit,
     this.resolution,
     this.min,
     this.max,
-    this.dafaultVal,
+    this.defaultVal,
     this.functionCode,
   });
 
-  ExcelInfor.copy(ExcelInfor obj)
+  ExcelInfo.copy(ExcelInfo obj)
       : meaning = obj.meaning,
         type = obj.type,
         unit = obj.unit,
         resolution = obj.resolution,
         min = obj.min,
         max = obj.max,
-        dafaultVal = obj.dafaultVal,
+        defaultVal = obj.defaultVal,
         functionCode = obj.functionCode;
 
   static getAddressFromDt(dt, i) {
     return getValueFromDt(dt, i, '寄存器地址');
+  }
+
+  static getFileNameFromDt(dt, i) {
+    return getValueFromDt(dt, i, '文件名');
+  }
+
+  static getFileRecordNumberFromDt(dt, i) {
+    return getValueFromDt(dt, i, '记录号');
   }
 
   static getMeaningFromDt(dt, i) {
@@ -149,9 +157,9 @@ class ExcelInfor {
     if (index >= 0 && index <= columns.length - 1) {
       var val = dt.rows[i][index];
       if (columnName.contains('最小值') || columnName.contains('最大值')) {
-        return val?.toDouble();
+        return val != null ? double.parse(val.toString()) : nullValue;
       } else if (columnName.contains('分辨率')) {
-        return val != null ? val.toDouble() : 1.0;
+        return val != null ? double.parse(val.toString()) : 1.0;
       } else {
         return val?.toString();
       }
