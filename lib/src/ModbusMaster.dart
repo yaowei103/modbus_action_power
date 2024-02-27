@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 // import 'package:excel/excel.dart';
+import 'package:modbus_action_power/packages/modbus_client/src/modbus_file_record.dart';
 import 'package:modbus_action_power/src/IModbus.dart';
 import 'package:modbus_action_power/entity/ReturnEntity.dart';
 import 'package:modbus_action_power/utils/Utils.dart';
@@ -110,7 +111,8 @@ class ModbusMaster extends IModbus {
     if (modbusClientRtu.isConnected) {
       (int, int) excelConfig = excelInfo2BName[objectName]!;
       returnEntity = retryGet2bRequest(
-        deviceId: 2,
+        subDeviceId: 1,
+        readDeviceId: 2,
         objectId: excelConfig.$1,
         length: excelConfig.$2,
       );
@@ -128,8 +130,31 @@ class ModbusMaster extends IModbus {
     return returnEntity;
   }
 
-  // Future<ReturnEntity> readFile({
-  //   required List<ReadFileInfo> readFileInfoList,
-  //   required int index,
-  // }) {}
+  /// readFileInfos 多个子请求, fileNum:文件号，recordNum:记录号，
+  ///
+  Future<ReturnEntity> readFile({
+    required List<ReadFileRequest> readFileRequests,
+  }) async {
+    var returnEntity = ReturnEntity();
+    // 子请求和响应最大字节长度
+    int maxReqLength = 256 - 5; // subDevice, functionCode, 字节数， CRC
+    int maxResLength = 256 - 5; // subDevice, functionCode, 响应数据长度，CRC
+
+    // 分包
+    List<List<ModbusFileRecord>> allPackageData = [];
+    List<ModbusFileRecord> singPackageRecords = [];
+    for (ReadFileRequest readFileRequest in readFileRequests) {
+      singPackageRecords.add(ModbusFileRecord.empty(fileNumber: readFileRequest.fileNum!, recordNumber: readFileRequest.recordNum!, recordLength: readFileRequest.dataLength!));
+    }
+
+    allPackageData.add(singPackageRecords);
+
+    if (modbusClientRtu.isConnected) {
+      returnEntity = await readFileRequest(allPackageData: allPackageData);
+    } else {
+      returnEntity.status = -1;
+      returnEntity.message = 'not connected or register element group is empty';
+    }
+    return returnEntity;
+  }
 }

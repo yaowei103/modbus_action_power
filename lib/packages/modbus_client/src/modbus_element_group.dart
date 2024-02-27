@@ -41,9 +41,12 @@ class ModbusElementsGroup extends Iterable<ModbusElement> {
   }
 
   /// Gets a read request from this elements group
-  ModbusReadGroupRequest getReadRequest({int? unitId, Duration? responseTimeout}) {
+  ModbusReadGroupRequest getReadRequest(
+      {int? unitId, Duration? responseTimeout}) {
     if (length == 0) {
-      throw ModbusException(context: "ModbusElements", msg: "Can not create a request for an empty group!");
+      throw ModbusException(
+          context: "ModbusElements",
+          msg: "Can not create a request for an empty group!");
     }
 
     var pdu = Uint8List(5);
@@ -51,7 +54,8 @@ class ModbusElementsGroup extends Iterable<ModbusElement> {
       ..setUint8(0, _type!.readFunction.code)
       ..setUint16(1, _startAddress)
       ..setUint16(3, _addressRange);
-    return ModbusReadGroupRequest(this, pdu, unitId: unitId, responseTimeout: responseTimeout);
+    return ModbusReadGroupRequest(this, pdu,
+        unitId: unitId, responseTimeout: responseTimeout);
   }
 
 /* NO IMPLEMENTED:
@@ -140,12 +144,15 @@ class ModbusElementsGroup extends Iterable<ModbusElement> {
     var maxLength = isRegister ? maxRegistersRange : maxCoilsRange;
     if (length > maxLength) {
       _rollback(rollbackElements);
-      throw ModbusException(context: "ModbusElements", msg: "Too many elements! [$length > $maxLength]");
+      throw ModbusException(
+          context: "ModbusElements",
+          msg: "Too many elements! [$length > $maxLength]");
     }
     // Same values?
     if (!_elements.any((e) => e.type == _type)) {
       _rollback(rollbackElements);
-      throw ModbusException(context: "ModbusElements", msg: "All elements must be of same type!");
+      throw ModbusException(
+          context: "ModbusElements", msg: "All elements must be of same type!");
     }
     // Sort elements by address
     _elements.sort((a, b) => a.address - b.address);
@@ -154,7 +161,9 @@ class ModbusElementsGroup extends Iterable<ModbusElement> {
     _addressRange += isRegister ? _elements.last.byteCount ~/ 2 : 1;
     if (_addressRange > maxLength) {
       _rollback(rollbackElements);
-      throw ModbusException(context: "ModbusElements", msg: "Address range exceeds $maxLength! [$_addressRange]");
+      throw ModbusException(
+          context: "ModbusElements",
+          msg: "Address range exceeds $maxLength! [$_addressRange]");
     }
   }
 }

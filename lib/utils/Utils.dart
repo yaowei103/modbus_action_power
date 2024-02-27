@@ -188,7 +188,7 @@ class Utils {
   }
 
   // 2b功能码返回值crc校验
-  static check2bDataCrc(Uint8List res) {
+  static checkResDataCrc(Uint8List res) {
     Uint8List resCrc = res.sublist(res.length - 2);
     Uint8List computedCrc = ModbusClientSerialRtu.computeCRC16(res.sublist(0, res.length - 2));
     return resCrc.equals(computedCrc);

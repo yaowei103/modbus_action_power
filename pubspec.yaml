@@ -1,7 +1,7 @@
 name: modbus_action_power
 description: A new Flutter plugin project.
 version: 0.0.1
-homepage:
+homepage: ''
 
 environment:
   sdk: '>=3.1.2 <4.0.0'
@@ -21,7 +21,8 @@ dependencies:
 
 # modbus_client_serial 依赖
   logging: ^1.2.0
-  libserialport: ^0.3.0+1
+#  libserialport: ^0.3.0+1
+  flutter_libserialport: ^0.4.0
   synchronized: ^3.1.0
 #  modbus_client: ^1.0.2
   collection: ^1.17.1

@@ -23,12 +23,15 @@ abstract class ModbusRequest {
 
   ModbusRequest(this.protocolDataUnit, {this.unitId, this.responseTimeout}) {
     if (protocolDataUnit.isEmpty) {
-      throw ModbusException(context: "ModbusRequest", msg: "Request PDU (i.e. Protocol Data Unit) cannot be empty!");
+      throw ModbusException(
+          context: "ModbusRequest",
+          msg: "Request PDU (i.e. Protocol Data Unit) cannot be empty!");
     }
     reset();
   }
 
-  Future<ModbusResponseCode> get responseCode async => _responseCompleter.future;
+  Future<ModbusResponseCode> get responseCode async =>
+      _responseCompleter.future;
 
   void reset() {
     _responseCompleter = Completer<ModbusResponseCode>();
@@ -58,15 +61,19 @@ abstract class ModbusRequest {
     setResponseCode(internalSetFromPduResponse(functionCode, pdu));
   }
 
-  ModbusResponseCode internalSetFromPduResponse(int functionCode, Uint8List pdu) => ModbusResponseCode.requestSucceed;
+  ModbusResponseCode internalSetFromPduResponse(
+          int functionCode, Uint8List pdu) =>
+      ModbusResponseCode.requestSucceed;
 }
 
 /// A request for a modbus element.
 abstract class ModbusElementRequest extends ModbusRequest {
-  ModbusElementRequest(super.protocolDataUnit, {super.unitId, super.responseTimeout});
+  ModbusElementRequest(super.protocolDataUnit,
+      {super.unitId, super.responseTimeout});
 
   @override
-  ModbusResponseCode internalSetFromPduResponse(int functionCode, Uint8List pdu) {
+  ModbusResponseCode internalSetFromPduResponse(
+      int functionCode, Uint8List pdu) {
     // Assign response data
     if (ModbusFunctionCode.isReadFunction(functionCode)) {
       internalSetElementData(pdu.sublist(2));
@@ -98,7 +105,8 @@ class ModbusReadRequest extends ModbusElementRequest {
   // N BYTES - Element Values
 
   final ModbusElement element;
-  ModbusReadRequest(this.element, super.protocolDataUnit, {super.unitId, super.responseTimeout});
+  ModbusReadRequest(this.element, super.protocolDataUnit,
+      {super.unitId, super.responseTimeout});
 
   @override
   int get responsePduLength => 2 + element.byteCount;
@@ -124,17 +132,23 @@ class ModbusReadGroupRequest extends ModbusElementRequest {
   // N BYTES - Element Values
 
   final ModbusElementsGroup elementGroup;
-  ModbusReadGroupRequest(this.elementGroup, super.protocolDataUnit, {super.unitId, super.responseTimeout});
+  ModbusReadGroupRequest(this.elementGroup, super.protocolDataUnit,
+      {super.unitId, super.responseTimeout});
 
   @override
-  int get responsePduLength => 2 + (elementGroup.type!.isBit ? (elementGroup.addressRange + 7) ~/ 8 : elementGroup.addressRange * 2);
+  int get responsePduLength =>
+      2 +
+      (elementGroup.type!.isBit
+          ? (elementGroup.addressRange + 7) ~/ 8
+          : elementGroup.addressRange * 2);
 
   @override
   void internalSetElementData(Uint8List data) {
     for (var register in elementGroup) {
       if (register.type.isRegister) {
         var startIndex = (register.address - elementGroup.startAddress) * 2;
-        register.setValueFromBytes(data.sublist(startIndex, startIndex + (register.byteCount)));
+        register.setValueFromBytes(
+            data.sublist(startIndex, startIndex + (register.byteCount)));
       }
       if (register.type.isBit) {
         var byteIndex = (register.address - elementGroup.startAddress) ~/ 8;
@@ -150,7 +164,8 @@ class ModbusReadGroupRequest extends ModbusElementRequest {
 /// A write request of a single element.
 class ModbusWriteRequest extends ModbusElementRequest {
   final ModbusElement element;
-  ModbusWriteRequest(this.element, super.protocolDataUnit, {super.unitId, super.responseTimeout});
+  ModbusWriteRequest(this.element, super.protocolDataUnit,
+      {super.unitId, super.responseTimeout});
 
   // Request PDU
   // -----------

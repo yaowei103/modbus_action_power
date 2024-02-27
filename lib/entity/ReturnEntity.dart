@@ -71,14 +71,35 @@ class ReadFileInfo {
 }
 
 class ExcelInfo {
+  /// 意义
   String? meaning;
+
+  /// 类型
   String? type;
+
+  /// 单位
   String? unit;
+
+  /// 精度
   double? resolution;
+
+  /// 最小值
   double? min;
+
+  /// 最大值
   double? max;
+
+  /// 默认值
   String? defaultVal;
-  List<String?>? functionCode;
+
+  /// 功能码
+  List<String>? functionCode;
+
+  /// 文件号
+  int? fileNum;
+
+  /// 记录号
+  int? recordNum;
 
   ExcelInfo({
     this.meaning,
@@ -89,6 +110,8 @@ class ExcelInfo {
     this.max,
     this.defaultVal,
     this.functionCode,
+    this.fileNum,
+    this.recordNum,
   });
 
   ExcelInfo.copy(ExcelInfo obj)
@@ -99,7 +122,17 @@ class ExcelInfo {
         min = obj.min,
         max = obj.max,
         defaultVal = obj.defaultVal,
-        functionCode = obj.functionCode;
+        functionCode = obj.functionCode,
+        fileNum = obj.fileNum,
+        recordNum = obj.recordNum;
+
+  int getSize() {
+    if (type == 'float' || type == 'uint32') {
+      return 2;
+    } else {
+      return 1;
+    }
+  }
 
   static getAddressFromDt(dt, i) {
     return getValueFromDt(dt, i, '寄存器地址');
@@ -169,27 +202,31 @@ class ExcelInfo {
   }
 }
 
-class WriteFileSendInfo {
+class WriteFileRequest {
   int? fileNum;
   int? recordNum;
   List<int>? recordData;
 
-  WriteFileSendInfo({
+  WriteFileRequest({
     this.fileNum,
     this.recordNum,
     this.recordData,
   });
 }
 
-class ReadFileSendInfo {
+/// 0x14读文件请求
+/// fileNum 文件号
+/// recordNum 记录号
+/// dataLength 读多少条数据
+class ReadFileRequest {
   int? fileNum;
   int? recordNum;
-  int? recordLength;
+  int? dataLength;
 
-  ReadFileSendInfo({
+  ReadFileRequest({
     this.fileNum,
     this.recordNum,
-    this.recordLength,
+    this.dataLength,
   });
 }
 

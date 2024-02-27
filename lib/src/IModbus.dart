@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:spreadsheet_decoder/spreadsheet_decoder.dart';
 
 import '../entity/InfoRTU.dart';
+import '../packages/modbus_client/src/modbus_file_record.dart';
 import '../packages/modbus_client_serial/modbus_client_serial.dart';
 
 import '../entity/ReturnEntity.dart';
@@ -149,7 +150,7 @@ abstract class IModbus {
           String char = '码';
           List<String> sArray = rowString[0].split(char);
           String functionCode = sArray.last.toLowerCase(); //得到功能码信息
-          List<String?> currentSheetFunctionCode = ['0x03', '0x06', '0x10', '0x2b', '0x14', '0x15'].where((e) {
+          List<String> currentSheetFunctionCode = ['0x03', '0x06', '0x10', '0x2b', '0x14', '0x15'].where((e) {
             return functionCode.contains(e);
           }).toList();
           bool ifFileFunctionCode = currentSheetFunctionCode.contains('0x14') || currentSheetFunctionCode.contains('0x15');
@@ -180,6 +181,18 @@ abstract class IModbus {
             // 文件功能码重复区
             bool? fileRepeatStart = ExcelInfo.getFileNameFromDt(dt, i)?.contains('重复数据区开始');
             bool? fileRepeatEnd = ExcelInfo.getFileNameFromDt(dt, i)?.contains('重复数据区结束');
+
+            // excelInfo 赋值变量
+            String? registerAddress = ExcelInfo.getAddressFromDt(dt, i);
+            String? excelInfoMeaning = ExcelInfo.getMeaningFromDt(dt, i);
+            String? excelInfoType = ExcelInfo.getTypeFromDt(dt, i);
+            String? excelInfoUnit = ExcelInfo.getUnitFromDt(dt, i);
+            double? excelInfoResolution = ExcelInfo.getResolutionFromDt(dt, i);
+            double? excelInfoMin = ExcelInfo.getMinFromDt(dt, i);
+            double? excelInfoMax = ExcelInfo.getMaxFromDt(dt, i);
+            String? excelInfoDefaultVal = ExcelInfo.getDefaultValFromDt(dt, i);
+            String? excelInfoFileNum = ExcelInfo.getFileNameFromDt(dt, i);
+            String? excelInfoRecordNum = ExcelInfo.getFileRecordNumberFromDt(dt, i);
 
             // 重复区开始
             if (registerRepeatStart ?? fileRepeatStart ?? false) {
@@ -215,30 +228,34 @@ abstract class IModbus {
             // 重复区数据 放入重复区数组
             if (tempFlag) {
               ExcelInfo excelInfoRepeat = ExcelInfo(
-                meaning: ExcelInfo.getMeaningFromDt(dt, i), //currentRow[2],
-                type: ExcelInfo.getTypeFromDt(dt, i), //currentRow[3],
-                unit: ExcelInfo.getUnitFromDt(dt, i), //currentRow[4],
-                resolution: ExcelInfo.getResolutionFromDt(dt, i),
-                min: ExcelInfo.getMinFromDt(dt, i),
-                max: ExcelInfo.getMaxFromDt(dt, i),
-                defaultVal: ExcelInfo.getDefaultValFromDt(dt, i),
+                meaning: excelInfoMeaning, //currentRow[2],
+                type: excelInfoType, //currentRow[3],
+                unit: excelInfoUnit, //currentRow[4],
+                resolution: excelInfoResolution,
+                min: excelInfoMin,
+                max: excelInfoMax,
+                defaultVal: excelInfoDefaultVal,
                 functionCode: currentSheetFunctionCode,
+                fileNum: int.tryParse(excelInfoFileNum ?? ''),
+                recordNum: int.tryParse(excelInfoRecordNum ?? ''),
               );
               repeatPartInfo.add(excelInfoRepeat);
             }
 
             if (dt.rows[i][0].toString() != "" && !dt.rows[i][0].toString().contains("重复数据区开始") && !tempFlag) {
-              excelInfo.meaning = ExcelInfo.getMeaningFromDt(dt, i); //dt.rows[i][2].toString();
-              excelInfo.min = ExcelInfo.getMinFromDt(dt, i);
-              excelInfo.max = ExcelInfo.getMaxFromDt(dt, i);
-              excelInfo.resolution = ExcelInfo.getResolutionFromDt(dt, i);
-              excelInfo.type = ExcelInfo.getTypeFromDt(dt, i);
+              excelInfo.meaning = excelInfoMeaning; //dt.rows[i][2].toString();
+              excelInfo.type = excelInfoType;
+              excelInfo.unit = excelInfoUnit;
+              excelInfo.resolution = excelInfoResolution;
+              excelInfo.min = excelInfoMin;
+              excelInfo.max = excelInfoMax;
+              excelInfo.defaultVal = excelInfoDefaultVal;
+              excelInfo.functionCode = currentSheetFunctionCode;
+              excelInfo.fileNum = int.tryParse(excelInfoFileNum ?? '');
+              excelInfo.recordNum = int.tryParse(excelInfoRecordNum ?? '');
 
-              String registerAddress = ExcelInfo.getAddressFromDt(dt, i).toString();
-              String fileName = ExcelInfo.getFileNameFromDt(dt, i).toString();
-              String fileRecordNumber = ExcelInfo.getFileRecordNumberFromDt(dt, i).toString();
               // 如果是文件功能码
-              int excelInfoKey = ifFileFunctionCode ? ((int.parse(fileName) << 16) + int.parse(fileRecordNumber)) : int.parse(registerAddress);
+              int excelInfoKey = ifFileFunctionCode ? ((int.parse(excelInfoFileNum!) << 16) + int.parse(excelInfoRecordNum!)) : int.parse(registerAddress!);
 
               if (i > 0 && excelInfo.type == null) {
                 if ((ExcelInfo.getTypeFromDt(dt, i - 1)?.contains("int32") ?? false) || (ExcelInfo.getTypeFromDt(dt, i - 1)?.contains("float") ?? false)) {
@@ -328,8 +345,13 @@ abstract class IModbus {
   }
 
   // 单次发送2b请求
+  /// subDeviceId 从机地址
+  /// readDeviceId 读设备ID码
+  /// objectId 起始对象ID
+  /// length 对象字节数量
   ReturnEntity retryGet2bRequest({
-    required int deviceId,
+    required int subDeviceId,
+    required int readDeviceId,
     required int objectId,
     required int length,
     int tryTimes = 0,
@@ -344,26 +366,19 @@ abstract class IModbus {
       ..setUint8(0, 0x01) // 从机地址
       ..setUint8(1, 0x2b) // 2B 功能码
       ..setUint8(2, 0x0e) // MEI类型 0E
-      ..setUint8(3, deviceId) // 读设备ID码
+      ..setUint8(3, readDeviceId) // 读设备ID码
       ..setUint8(4, objectId); // 对象ID
 
-    var crcMsg = ModbusClientSerialRtu.computeCRC16(pdu);
-    var pduWithCrc = Uint8List.fromList([...(pdu.toList()), ...(crcMsg.toList())]);
+    returnEntity.data = customSendData(pdu, resAllLength);
 
-    modbusClientRtu.serialPort!.write(pduWithCrc, timeout: modbusClientRtu.responseTimeout.inMilliseconds);
-    returnEntity.data = modbusClientRtu.serialPort!.read(resAllLength, timeout: modbusClientRtu.responseTimeout.inMilliseconds);
     if (returnEntity.data.isEmpty) {
       returnEntity.status = -3;
       returnEntity.message = 'Serial port connection error';
       return returnEntity;
     }
-    bool checkCrcResult = Utils.check2bDataCrc(returnEntity.data);
+    bool checkCrcResult = Utils.checkResDataCrc(returnEntity.data);
     if (!checkCrcResult && tryTimes < maxRetry) {
-      return retryGet2bRequest(
-        deviceId: deviceId,
-        objectId: objectId,
-        length: length,
-      );
+      return retryGet2bRequest(subDeviceId: subDeviceId, readDeviceId: readDeviceId, objectId: objectId, length: length, tryTimes: tryTimes + 1);
     } else if (!checkCrcResult && tryTimes >= maxRetry) {
       returnEntity.status = -1;
       returnEntity.data = Uint8List(resAllLength);
@@ -373,21 +388,60 @@ abstract class IModbus {
     return returnEntity;
   }
 
-  // 发送单包数据
+  /// 0x14
+  /// allPackageData List<List<ModbusFileRecord>> 包集合
+  /// List<ModbusFileRecord> 单包
+  Future<ReturnEntity> readFileRequest({required List<List<ModbusFileRecord>> allPackageData}) async {
+    // 循环发送多包数据
+    var returnEntity = ReturnEntity();
+    List resultArr = [];
+    Utils.log('===包数量：${allPackageData.length}');
+    for (int i = 0; i < allPackageData.length; i++) {
+      List<ModbusFileRecord> singlePackageRecords = allPackageData[i];
+      ModbusFileRecordsReadRequest request = ModbusFileRecordsReadRequest(singlePackageRecords);
+      ModbusResponseCode responseCode = await retrySinglePackage(
+        request: request,
+        packageIndex: i,
+      );
+      if (responseCode != ModbusResponseCode.requestSucceed) {
+        returnEntity.status = -3;
+        returnEntity.message = responseCode.name;
+        return returnEntity;
+      }
+      resultArr.addAll(request.fileRecords.map((e) => e.recordBytes).toList());
+    }
+
+    returnEntity.data = resultArr.join(',');
+    return returnEntity;
+  }
+
+  /// 直接调用串口发送数据
+  /// {@param pdu} 要发送的数据，不包括CRC
+  /// {@param resSize} 响应总字节长度
+  Uint8List customSendData(Iterable<int> pdu, int resSize) {
+    Uint8List crcMsg = ModbusClientSerialRtu.computeCRC16(pdu);
+    Uint8List pduWithCrc = Uint8List.fromList([...(pdu.toList()), ...(crcMsg.toList())]);
+
+    modbusClientRtu.serialPort!.write(pduWithCrc, timeout: modbusClientRtu.responseTimeout.inMilliseconds);
+    return modbusClientRtu.serialPort!.read(resSize, timeout: modbusClientRtu.responseTimeout.inMilliseconds);
+  }
+
+  /// 发送单包数据
+  /// {@param request} ModbusRequest
+  /// {@param retry} 第几次重试
+  /// {@param packageIndex} 发送第几包数据
   Future<ModbusResponseCode> retrySinglePackage({
     required ModbusRequest request,
     int retry = 0,
-    required int currentPackage,
-    required ModbusClientSerialRtu modbusClientRtu,
-    required int maxRetry,
+    required int packageIndex,
   }) async {
     ModbusResponseCode responseCode = await modbusClientRtu.send(request);
     if (responseCode == ModbusResponseCode.requestSucceed) {
       return responseCode;
     } else if (retry < maxRetry) {
-      Utils.log('---重发 第$currentPackage包第${retry + 1}次, $responseCode');
+      Utils.log('---重发 第${packageIndex + 1}包第${retry + 1}次, $responseCode');
       await Future.delayed(const Duration(milliseconds: 2));
-      return retrySinglePackage(request: request, retry: retry + 1, currentPackage: currentPackage, modbusClientRtu: modbusClientRtu, maxRetry: maxRetry);
+      return retrySinglePackage(request: request, retry: retry + 1, packageIndex: packageIndex);
     } else {
       return responseCode;
     }
@@ -401,9 +455,7 @@ abstract class IModbus {
     for (int i = 0; i < elementsGroupList.length; i++) {
       ModbusResponseCode responseCode = await retrySinglePackage(
         request: ModbusElementsGroup(elementsGroupList[i]['group']).getReadRequest(),
-        currentPackage: i + 1,
-        modbusClientRtu: modbusClientRtu,
-        maxRetry: maxRetry,
+        packageIndex: i,
       );
       if (responseCode != ModbusResponseCode.requestSucceed) {
         returnEntity.status = -3;
@@ -430,9 +482,7 @@ abstract class IModbus {
     var data = elementsGroupList[0]['data'][0];
     ModbusResponseCode responseCode = await retrySinglePackage(
       request: element.getWriteRequest(data, rawValue: true),
-      currentPackage: 1,
-      modbusClientRtu: modbusClientRtu,
-      maxRetry: maxRetry,
+      packageIndex: 0,
     );
     if (responseCode != ModbusResponseCode.requestSucceed) {
       returnEntity.status = -3;
@@ -456,9 +506,7 @@ abstract class IModbus {
     for (int i = 0; i < elementsGroupList.length; i++) {
       ModbusResponseCode responseCode = await retrySinglePackage(
         request: ModbusElementsGroup(elementsGroupList[i]['group']).getWriteRequest(elementsGroupList[i]['data'], rawValue: true),
-        currentPackage: i + 1,
-        modbusClientRtu: modbusClientRtu,
-        maxRetry: maxRetry,
+        packageIndex: i,
       );
       if (responseCode != ModbusResponseCode.requestSucceed) {
         returnEntity.status = -3;
@@ -472,15 +520,4 @@ abstract class IModbus {
     returnEntity.data = resultArr.join(',');
     return returnEntity;
   }
-
-  /// 加载协议
-  ///
-  /// protocol 协议文件全路径
-  // Future<ReturnEntity> readComFileInfo();
-
-  // 注销接口
-  // 总线监测事件接口
-  // 从站更新寄存器事件通知
-  late void Function(Object) receiveDataChanged;
-  late void Function(Object) sendDataChanged;
 }

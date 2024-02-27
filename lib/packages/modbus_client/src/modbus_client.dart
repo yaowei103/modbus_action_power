@@ -14,7 +14,10 @@ abstract class ModbusClient {
   final Duration responseTimeout;
   final ModbusConnectionMode connectionMode;
 
-  ModbusClient({this.unitId, this.responseTimeout = const Duration(seconds: 3), this.connectionMode = ModbusConnectionMode.autoConnectAndKeepConnected});
+  ModbusClient(
+      {this.unitId,
+      this.responseTimeout = const Duration(seconds: 3),
+      this.connectionMode = ModbusConnectionMode.autoConnectAndKeepConnected});
 
   /// Sends the modbus requests. A [ModbusResponseCode] is returned as a future.
   ///
@@ -45,5 +48,6 @@ abstract class ModbusClient {
 
   /// If [request] has its own [responseTimeout] defined, then it will override
   /// this client [responseTimeout].
-  Duration getResponseTimeout(ModbusRequest request) => request.responseTimeout ?? responseTimeout;
+  Duration getResponseTimeout(ModbusRequest request) =>
+      request.responseTimeout ?? responseTimeout;
 }

@@ -23,7 +23,7 @@ class _MyAppState extends State<MyApp> {
   int setTime = 0;
   bool initDone = false;
 
-  String filePath = 'assets/pre20Modbus.xlsx'; //'assets/ppmDCModbus.xlsx';
+  String filePath = 'assets/pre20Modbus.xlsx'; // 'assets/pre20Modbus.xlsx'; //'assets/ppmDCModbus.xlsx';
   String filePath485 = 'assets/DisplayControl.xlsx';
 
   @override
@@ -73,6 +73,48 @@ class _MyAppState extends State<MyApp> {
                       },
                       child: const Text('disConnect'),
                     ),
+                    const Divider(),
+                    ElevatedButton(
+                      onPressed: initDone
+                          ? () async {
+                              final reqStopwatch = Stopwatch()..start();
+                              var res = await _modbusActionPowerPlugin.getData(startRegAddr: '1286', dataCount: '3'); // 3072_54
+                              setState(() {
+                                getTime = reqStopwatch.elapsedMilliseconds;
+                                getTypeResultData = res.status == 0 ? res.data : res.message;
+                              });
+                            }
+                          : null,
+                      child: const Text('getData'),
+                    ),
+                    ElevatedButton(
+                      onPressed: initDone
+                          ? () async {
+                              final reqStopwatch = Stopwatch()..start();
+                              var res = await _modbusActionPowerPlugin.get2bData(objectName: '监控软件版本');
+                              setState(() {
+                                getTime = reqStopwatch.elapsedMilliseconds;
+                                getTypeResultData = res.status == 0 ? res.data : res.message;
+                              });
+                            }
+                          : null,
+                      child: const Text('get2BData'),
+                    ),
+                    ElevatedButton(
+                      onPressed: initDone
+                          ? () async {
+                              final reqStopwatch = Stopwatch()..start();
+                              var req = [ReadFileRequest(fileNum: 1, recordNum: 0, dataLength: 10), ReadFileRequest(fileNum: 1, recordNum: 10, dataLength: 10)];
+                              ReturnEntity res = await _modbusActionPowerPlugin.readFile(readFileInfos: req);
+                              setState(() {
+                                setTime = reqStopwatch.elapsedMilliseconds;
+                                setTypeResultData = res.status == 0 && res.data != null ? res.data : res.message;
+                              });
+                            }
+                          : null,
+                      child: const Text('read file'),
+                    ),
+                    const Divider(),
                     ElevatedButton(
                       onPressed: initDone
                           ? () async {

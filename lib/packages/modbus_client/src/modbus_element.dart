@@ -23,7 +23,13 @@ abstract class ModbusElement<T> {
 
   T? _value;
 
-  ModbusElement({required this.name, this.description = "", required this.type, required this.address, required this.byteCount, this.onUpdate});
+  ModbusElement(
+      {required this.name,
+      this.description = "",
+      required this.type,
+      required this.address,
+      required this.byteCount,
+      this.onUpdate});
 
   T? get value => _value;
   set value(dynamic newValue) {
@@ -43,16 +49,20 @@ abstract class ModbusElement<T> {
       ..setUint8(0, type.readFunction.code)
       ..setUint16(1, address)
       ..setUint16(3, byteCount > 1 ? byteCount ~/ 2 : 1);
-    return ModbusReadRequest(this, pdu, unitId: unitId, responseTimeout: responseTimeout);
+    return ModbusReadRequest(this, pdu,
+        unitId: unitId, responseTimeout: responseTimeout);
   }
 
   /// Gets a write request from this element.
   /// [value] is set to the element once request is successfully completed.
   /// If [rawValue] is true then the integer [value] is written as it is
   /// without any value or type conversion.
-  ModbusWriteRequest getWriteRequest(dynamic value, {bool rawValue = false, int? unitId, Duration? responseTimeout}) {
+  ModbusWriteRequest getWriteRequest(dynamic value,
+      {bool rawValue = false, int? unitId, Duration? responseTimeout}) {
     if (type.writeSingleFunction == null) {
-      throw ModbusException(context: "ModbusBitElement", msg: "$type element does not support write request!");
+      throw ModbusException(
+          context: "ModbusBitElement",
+          msg: "$type element does not support write request!");
     }
     // Build the request object
     var pdu = Uint8List(5);
@@ -60,13 +70,15 @@ abstract class ModbusElement<T> {
       ..setUint8(0, type.writeSingleFunction!.code)
       ..setUint16(1, address)
       ..setUint16(3, rawValue ? value as int : _getRawValue(value));
-    return ModbusWriteRequest(this, pdu, unitId: unitId, responseTimeout: responseTimeout);
+    return ModbusWriteRequest(this, pdu,
+        unitId: unitId, responseTimeout: responseTimeout);
   }
 
   int _getRawValue(dynamic value);
 
   @override
-  String toString() => "$name: $_valueStr${description == '' ? '' : ' [$description]'}";
+  String toString() =>
+      "$name: $_valueStr${description == '' ? '' : ' [$description]'}";
 
   String get _valueStr => _value == null ? "<none>" : _value.toString();
 }

@@ -50,6 +50,22 @@ class ModbusActionPower {
     return returnEntity;
   }
 
+  /// 0x14功能码获取数据
+  /// readFileInfos
+  ///  fileNum: 文件号
+  ///  recordNum： 记录号
+  ///  dataLength： 数据量
+  Future<ReturnEntity> readFile({required List<ReadFileRequest> readFileInfos}) async {
+    // req_21504_3001
+    Stopwatch sw = Stopwatch()..start();
+    List<String> logArr = readFileInfos.map((e) => '${e.fileNum}-${e.recordNum}-${e.dataLength}').toList();
+    Utils.log('===get ${logArr.join(',')}');
+    ReturnEntity res = await master.readFile(readFileRequests: readFileInfos);
+    Utils.log('===get ${logArr.join(',')}, result: ${res.status == 0 ? res.data : res}');
+    Utils.log('===get ${logArr.join(',')}, time: ${(sw..stop()).elapsedMilliseconds}');
+    return res;
+  }
+
   /// 03功能码获取数据
   /// String startRegAddr 起始地址
   /// String dataCount 寄存器个数
