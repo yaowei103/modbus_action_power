@@ -389,16 +389,27 @@ abstract class IModbus {
   }
 
   /// 0x14
-  /// allPackageData List<List<ModbusFileRecord>> 包集合
-  /// List<ModbusFileRecord> 单包
-  Future<ReturnEntity> readFileRequest({required List<List<ModbusFileRecord>> allPackageData}) async {
+  /// allPackageData List<List<ReadFileInfo>> 包集合
+  /// List<ReadFileInfo> 单包
+  Future<ReturnEntity<List<int>>> readFileRequest({required List<List<ReadFileInfo>> allPackageData}) async {
+    var returnEntity = ReturnEntity<List<int>>();
+    List<List<int>> resultArr = [];
+    // 每个数据的占据寄存器个数，方便做结果数据组装,元素个数和结果个数相等
+    List<int> resultTypeMapping = [];
     // 循环发送多包数据
-    var returnEntity = ReturnEntity();
-    List resultArr = [];
     Utils.log('===包数量：${allPackageData.length}');
     for (int i = 0; i < allPackageData.length; i++) {
-      List<ModbusFileRecord> singlePackageRecords = allPackageData[i];
+      List<ModbusFileRecord> singlePackageRecords = allPackageData[i].map((item) {
+        resultTypeMapping.addAll(item.dataSizes);
+        return ModbusFileRecord.empty(
+          fileNumber: item.fileNum,
+          recordNumber: item.recordNum,
+          recordLength: item.recordLength,
+        );
+      }).toList();
+      Utils.log('===当前包：${singlePackageRecords.map((item) => '${item.fileNumber}-${item.recordNumber}-${item.recordLength}').toList().join(',')}');
       ModbusFileRecordsReadRequest request = ModbusFileRecordsReadRequest(singlePackageRecords);
+
       ModbusResponseCode responseCode = await retrySinglePackage(
         request: request,
         packageIndex: i,
@@ -410,8 +421,21 @@ abstract class IModbus {
       }
       resultArr.addAll(request.fileRecords.map((e) => e.recordBytes).toList());
     }
-
-    returnEntity.data = resultArr.join(',');
+    // 结果全部展开
+    List<int> expandResultArr = resultArr.expand((element) => element).toList();
+    // 返回的结果
+    List<int> resArr = [];
+    for (int i = 0; i < resultTypeMapping.length; i++) {
+      int dataType = resultTypeMapping[i];
+      if (dataType == 1) {
+        resArr.add(expandResultArr.removeAt(0));
+      } else {
+        int hi = expandResultArr.removeAt(0);
+        int lo = expandResultArr.removeAt(0);
+        resArr.add((hi << 16) + lo);
+      }
+    }
+    returnEntity.data = resArr;
     return returnEntity;
   }
 

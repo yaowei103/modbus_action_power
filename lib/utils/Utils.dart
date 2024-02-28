@@ -8,6 +8,20 @@ import '../entity/ReturnEntity.dart';
 import '../packages/modbus_client_serial/src/modbus_client_serial.dart';
 
 class Utils {
+  /// 数据类型对应寄存器个数
+  static int getTypeSize(String type) {
+    if (!['int16', 'uint16', 'uint32', 'float'].contains(type)) {
+      return 0;
+    }
+    Map<String, int> dataTypeMapping = {
+      'int16': 1,
+      'uint16': 1,
+      'uint32': 2,
+      'float': 2,
+    };
+    return dataTypeMapping[type]!;
+  }
+
   // Int16, Uint16, Uint32, Int32 的16进制 转 10进制数字
   static num getResponseData(int val, {type}) {
     if (type == 'float') {
@@ -74,13 +88,6 @@ class Utils {
     var returnEntity = ReturnEntity<List<Map<String, dynamic>>?>();
     List<Map<String, dynamic>> arr = [];
     int currentAddress = int.parse(startRegAddr);
-
-    Map<String, int> dataTypeMapping = {
-      'int16': 1,
-      'uint16': 1,
-      'uint32': 2,
-      'float': 2,
-    };
 
     // 分包，100 byte
     int allLength = 0;
@@ -159,7 +166,7 @@ class Utils {
             break;
         }
         serializableDat != null ? cacheDataArr.add(Utils.transformFrom10ToInt(double.parse(serializableDat[allLength]), type: excelAddressType, resolution: resolution)) : null;
-        cacheLength += dataTypeMapping[excelAddressType]!;
+        cacheLength += Utils.getTypeSize(excelAddressType);
         allLength += 1;
         if (cacheLength >= 100 || allLength >= (dataCount ?? double.infinity) || allLength >= (serializableDat?.length ?? double.infinity)) {
           Iterable<ModbusElement<dynamic>> group = []
@@ -244,6 +251,82 @@ class Utils {
     List<String> data = value.split('\u0000');
 
     return data.where((s) => s.isNotEmpty).toList();
+  }
+
+  /// 将 readFileRequests 进行分包
+  /// 分包前
+  /// [
+  ///   ReadFileRequest(fileNum: 2, recordNum: 0, dataLength: 9), // recordLength: 11
+  ///   ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 300 * 9), // recordLength: 300 * 17
+  /// ]
+  ///
+  /// 分包后
+  /// [
+  ///   [
+  ///     ReadFineInfo(fileNum:2, recordNum: 0, datalength: 9, dataSizes: [1,2,1,1,1,1,2,1,1], (对应：'uint16', 'uint32', 'uint16', 'uint16', 'uint16', 'uint16', 'uint32', 'uint16', 'uint16')), // recordLength: 11
+  ///     ReadFileInfo(fileNum:2, recordNum: 15, datalength: 100, dataSizes: []), // recordLength: 11
+  ///     ReadFileInfo(fileNum:2, recordNum: 115, datalength: 100, dataSizes: []), // recordLength: 11
+  ///     ReadFileInfo(fileNum:2, recordNum: 215, datalength: 100, dataSizes: []), // recordLength: 11
+  ///   ]
+  /// ]
+  static ReturnEntity<List<List<ReadFileInfo>>> packageReadFileRequest(List<ReadFileRequest> readFileRequests, Map<int, ExcelInfo> excelInfoAll) {
+    ReturnEntity<List<List<ReadFileInfo>>> returnEntity = ReturnEntity();
+    // 子请求和响应最大字节长度
+    // int maxReqLength = 256 - 5; // subDevice, functionCode, 字节数， CRC
+    int maxResLength = 256 - 5 - 12; // subDevice, functionCode, 响应数据长度，CRC，多空一些字符
+
+    List<List<ReadFileInfo>> allPackageData = [];
+    // 单包大小计数
+    int packResSize = 0;
+    List<int> dataSizes = [];
+    List<ReadFileInfo> singPackageRecords = [];
+    for (ReadFileRequest readFileRequest in readFileRequests) {
+      int fileNum = readFileRequest.fileNum!;
+      int recordNum = readFileRequest.recordNum!;
+      ReadFileInfo singleRecord = ReadFileInfo(fileNum: fileNum, recordNum: recordNum, recordLength: 0, dataSizes: []);
+      packResSize += 2; // 响应长度、参考类型
+      int excelKey = (fileNum << 16) + recordNum;
+      for (int i = 0; i < readFileRequest.dataLength!; i++) {
+        ExcelInfo? excel = excelInfoAll[excelKey];
+        if (excel == null) {
+          returnEntity.status = -1;
+          returnEntity.message = '未找到对应的文件号：${excelKey >> 16}或记录号：${excelKey & 0xffff}';
+          return returnEntity;
+        }
+        int dataSize = Utils.getTypeSize(excel.type!);
+        packResSize += dataSize * 2; // 记录数据高低位
+        excelKey += dataSize;
+        singleRecord.recordLength = singleRecord.recordLength + dataSize;
+
+        dataSizes.add(dataSize);
+        if (packResSize >= maxResLength || i == (readFileRequest.dataLength! - 1)) {
+          singleRecord.dataSizes = dataSizes;
+          singPackageRecords.add(ReadFileInfo(
+            fileNum: singleRecord.fileNum,
+            recordNum: singleRecord.recordNum,
+            recordLength: singleRecord.recordLength,
+            dataSizes: dataSizes.toList(),
+          ));
+          if (packResSize >= maxResLength) {
+            packResSize = 0;
+            allPackageData.add(singPackageRecords.toList());
+            singPackageRecords.clear();
+          }
+          dataSizes.clear();
+          singleRecord.recordNum = singleRecord.recordNum + singleRecord.recordLength;
+          singleRecord.recordLength = 0;
+          singleRecord.dataSizes = [];
+        }
+      }
+      if (singPackageRecords.isNotEmpty) {
+        allPackageData.add(singPackageRecords.toList());
+      }
+      singPackageRecords.clear();
+      packResSize = 0;
+    }
+
+    returnEntity.data = allPackageData;
+    return returnEntity;
   }
 
   /// 计算小数有几位小数位数

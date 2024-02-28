@@ -21,7 +21,7 @@ class ReturnEntity<T> {
     return {
       'status': status,
       'message': message,
-      'data': data,
+      'data': data.toString(),
     };
   }
 
@@ -189,9 +189,9 @@ class WriteFileRequest {
 }
 
 /// 0x14读文件请求
-/// fileNum 文件号
-/// recordNum 记录号
-/// dataLength 读多少条数据
+/// [fileNum]: 文件号
+/// [recordNum]: 记录号
+/// [dataLength]: 读多少条数据
 class ReadFileRequest {
   int? fileNum;
   int? recordNum;
@@ -205,18 +205,21 @@ class ReadFileRequest {
 }
 
 /// 将ReadFileRequest 转换成ReadFileInfo
-/// 包含了每一个record的数据字节数
+/// -[fileNum]: 文件号
+/// -[recordNum]: 记录号
+/// -[recordLength]: 需要读取寄存器个数
+/// -[dataSizes]: 将ReadFileRequest的dataLength 转换成ReadFileInfo的recordLength的时候，每个数据对应的占寄存器个数，可选[1,2]
 class ReadFileInfo {
-  int? fileNum;
-  int? recordNum;
-  int? recordLength;
-  List<int>? dataSizes;
+  int fileNum;
+  int recordNum;
+  int recordLength;
+  List<int> dataSizes;
 
   ReadFileInfo({
-    this.fileNum,
-    this.recordNum,
-    this.recordLength,
-    this.dataSizes,
+    required this.fileNum,
+    required this.recordNum,
+    required this.recordLength,
+    required this.dataSizes,
   });
 }
 
