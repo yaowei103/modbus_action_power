@@ -55,12 +55,12 @@ class ModbusActionPower {
   ///  fileNum: 文件号
   ///  recordNum： 记录号
   ///  dataLength： 数据量
-  Future<ReturnEntity> readFile({required List<ReadFileRequest> readFileInfos}) async {
+  Future<ReturnEntity> readFile({required List<ReadFileRequest> readFileRequests}) async {
     // req_21504_3001
     Stopwatch sw = Stopwatch()..start();
-    List<String> logArr = readFileInfos.map((e) => '${e.fileNum}-${e.recordNum}-${e.dataLength}').toList();
+    List<String> logArr = readFileRequests.map((e) => '${e.fileNum}-${e.recordNum}-${e.dataLength}').toList();
     Utils.log('===get ${logArr.join(',')}');
-    ReturnEntity res = await master.readFile(readFileRequests: readFileInfos);
+    ReturnEntity res = await master.readFile(readFileRequests: readFileRequests);
     Utils.log('===get ${logArr.join(',')}, result: ${res.status == 0 ? res.data : res}');
     Utils.log('===get ${logArr.join(',')}, time: ${(sw..stop()).elapsedMilliseconds}');
     return res;
