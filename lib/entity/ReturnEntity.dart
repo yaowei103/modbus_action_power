@@ -44,32 +44,6 @@ class DeviceComInfo {
   });
 }
 
-class WriteFileInfo {
-  int? fileNum;
-  int? recordNum;
-  String? recordData;
-  int? setDatLength;
-
-  WriteFileInfo({
-    this.fileNum,
-    this.recordNum,
-    this.recordData,
-    this.setDatLength = 0,
-  });
-}
-
-class ReadFileInfo {
-  int? fileNum;
-  int? recordNum;
-  int? recordLength;
-
-  ReadFileInfo({
-    this.fileNum,
-    this.recordNum,
-    this.recordLength,
-  });
-}
-
 class ExcelInfo {
   /// 意义
   String? meaning;
@@ -227,6 +201,36 @@ class ReadFileRequest {
     this.fileNum,
     this.recordNum,
     this.dataLength,
+  });
+}
+
+/// 将ReadFileRequest 转换成ReadFileInfo
+/// 包含了每一个record的数据字节数
+class ReadFileInfo {
+  int? fileNum;
+  int? recordNum;
+  int? recordLength;
+  List<int>? dataSizes;
+
+  ReadFileInfo({
+    this.fileNum,
+    this.recordNum,
+    this.recordLength,
+    this.dataSizes,
+  });
+}
+
+class WriteFileInfo {
+  int? fileNum;
+  int? recordNum;
+  String? recordData;
+  int? setDatLength;
+
+  WriteFileInfo({
+    this.fileNum,
+    this.recordNum,
+    this.recordData,
+    this.setDatLength = 0,
   });
 }
 
