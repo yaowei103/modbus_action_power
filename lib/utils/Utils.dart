@@ -9,7 +9,7 @@ import '../packages/modbus_client_serial/src/modbus_client_serial.dart';
 
 class Utils {
   /// 数据类型对应寄存器个数
-  static int getTypeSize(String type) {
+  static int getTypeRegisterSize(String type) {
     if (!['int16', 'uint16', 'uint32', 'float'].contains(type)) {
       return 0;
     }
@@ -23,40 +23,40 @@ class Utils {
   }
 
   // Int16, Uint16, Uint32, Int32 的16进制 转 10进制数字
-  static num getResponseData(int val, {type}) {
+  static num getResponseData(int val, {required String type, double? resolution}) {
     if (type == 'float') {
       Int8List bytes = Int8List(4);
       ByteData byteData = ByteData.view(bytes.buffer);
       byteData.setUint32(0, val, Endian.big);
       double resVal = byteData.getFloat32(0, Endian.big);
-      return resVal;
+      return double.parse(resVal.toStringAsPrecision(7));
     } else if (type == 'uint16') {
       Int8List bytes = Int8List(2); // 创建一个长度为4的字节列表
       ByteData byteData = ByteData.view(bytes.buffer); // 将字节列表转换为字节缓冲区视图
       byteData.setUint16(0, val, Endian.big);
       int resVal = byteData.getUint16(0, Endian.big);
-      return resVal;
+      return (resolution != null && resolution != 1) ? resVal * resolution : resVal;
     } else if (type == 'int16') {
       Int8List bytes = Int8List(2); // 创建一个长度为4的字节列表
       ByteData byteData = ByteData.view(bytes.buffer); // 将字节列表转换为字节缓冲区视图
       byteData.setInt16(0, val, Endian.big);
       int resVal = byteData.getInt16(0, Endian.big);
-      return resVal;
+      return (resolution != null && resolution != 1) ? resVal * resolution : resVal;
     } else if (type == 'uint32') {
       Int8List bytes = Int8List(4); // 创建一个长度为4的字节列表
       ByteData byteData = ByteData.view(bytes.buffer); // 将字节列表转换为字节缓冲区视图
       byteData.setUint32(0, val, Endian.big);
       int resVal = byteData.getUint32(0, Endian.big);
-      return resVal;
+      return (resolution != null && resolution != 1) ? resVal * resolution : resVal;
     }
     return 0;
   }
 
   // 10进制数字转Int16, Uint16, Uint32, Int32 的16进制
-  static transformFrom10ToInt(double val, {required String type, double? resolution}) {
+  static int transformFrom10ToInt(num val, {required String type, double? resolution}) {
     if (type == 'float') {
       int? decimalCount = resolution != null ? Utils.countDecimalPlaces(resolution) : null; //resolution.toString().split('.')[1].length : null;
-      Float32List float32list = Float32List.fromList([decimalCount != null ? double.parse(val.toStringAsFixed(decimalCount)) : val]);
+      Float32List float32list = Float32List.fromList([(decimalCount != null ? double.parse(val.toStringAsFixed(decimalCount)) : val) as double]);
       Int32List int32list = Int32List.view(float32list.buffer);
       String hexValue = int32list[0].toRadixString(16);
       return int.parse(hexValue, radix: 16);
@@ -75,6 +75,33 @@ class Utils {
       Uint32List uint32list1 = Uint32List.view(uint32list.buffer);
       String hexValue = uint32list1[0].toRadixString(16);
       return int.parse(hexValue, radix: 16);
+    } else {
+      return 0;
+    }
+  }
+
+  /// 将num转换成单寄存器数据int list
+
+  static List<int> dataToIntList({required num val, required String type}) {
+    switch (type) {
+      case 'float':
+        // Float (4 bytes)
+        var list = Uint16List(2);
+        list.buffer.asFloat32List()[0] = (val as double);
+        return list.reversed.toList();
+      case 'uint16':
+        // Unsigned 16-bit integer (2 bytes)
+        return Uint16List(1)..buffer.asUint16List()[0] = (val as int);
+      case 'int16':
+        // Signed 16-bit integer (2 bytes)
+        return Uint16List(1)..buffer.asInt16List()[0] = (val as int);
+      case 'uint32':
+        // Unsigned 32-bit integer (4 bytes)
+        var list = Uint16List(2);
+        list.buffer.asUint32List()[0] = (val as int);
+        return list.reversed.toList();
+      default:
+        throw ArgumentError('Invalid data type: $type');
     }
   }
 
@@ -113,8 +140,7 @@ class Utils {
               multiplier: 1,
               offset: 0,
               format: (val) {
-                var res = Utils.getResponseData(val.toInt(), type: excelAddressType);
-                return (resolution != null && resolution != 1) ? res * resolution : res;
+                return Utils.getResponseData(val.toInt(), type: excelAddressType, resolution: resolution);
               },
             ));
             break;
@@ -127,8 +153,7 @@ class Utils {
               multiplier: 1,
               offset: 0,
               format: (val) {
-                var res = Utils.getResponseData(val.toInt(), type: excelAddressType);
-                return (resolution != null && resolution != 1) ? res * resolution : res;
+                return Utils.getResponseData(val.toInt(), type: excelAddressType);
               },
             ));
             break;
@@ -141,8 +166,7 @@ class Utils {
               multiplier: 1,
               offset: 0,
               format: (val) {
-                var res = Utils.getResponseData(val.toInt(), type: excelAddressType);
-                return (resolution != null && resolution != 1) ? res * resolution : res;
+                return Utils.getResponseData(val.toInt(), type: excelAddressType);
               },
             ));
             break;
@@ -157,16 +181,15 @@ class Utils {
               format: (val) {
                 // float 按resolution保留位数
                 // var resolution = currentAddressConfig.resolution;
-                double res = Utils.getResponseData(val.toInt(), type: excelAddressType) as double;
+                return Utils.getResponseData(val.toInt(), type: excelAddressType) as double;
                 // int decimalCount = resolution.toString().split('.')[1].length;
                 // return resolution != null ? double.parse(res.toStringAsFixed(decimalCount)) : res;
-                return double.parse(res.toStringAsPrecision(7));
               },
             ));
             break;
         }
         serializableDat != null ? cacheDataArr.add(Utils.transformFrom10ToInt(double.parse(serializableDat[allLength]), type: excelAddressType, resolution: resolution)) : null;
-        cacheLength += Utils.getTypeSize(excelAddressType);
+        cacheLength += Utils.getTypeRegisterSize(excelAddressType);
         allLength += 1;
         if (cacheLength >= 100 || allLength >= (dataCount ?? double.infinity) || allLength >= (serializableDat?.length ?? double.infinity)) {
           Iterable<ModbusElement<dynamic>> group = []
@@ -253,7 +276,7 @@ class Utils {
     return data.where((s) => s.isNotEmpty).toList();
   }
 
-  /// 将 readFileRequests 进行分包
+  /// 0x14 将 readFileRequests 进行分包
   /// 分包前
   /// [
   ///   ReadFileRequest(fileNum: 2, recordNum: 0, dataLength: 9), // recordLength: 11
@@ -273,49 +296,49 @@ class Utils {
     ReturnEntity<List<List<ReadFileInfo>>> returnEntity = ReturnEntity();
     // 子请求和响应最大字节长度
     // int maxReqLength = 256 - 5; // subDevice, functionCode, 字节数， CRC
-    int maxResLength = 256 - 5 - 12; // subDevice, functionCode, 响应数据长度，CRC，多空一些字符
+    int maxResLength = 256 - 5 - 5; // subDevice, functionCode, 响应数据长度，CRC，多空一些字符
 
     List<List<ReadFileInfo>> allPackageData = [];
     // 单包大小计数
     int packResSize = 0;
-    List<int> dataSizes = [];
+    List<ExcelInfo> excelInfos = [];
     List<ReadFileInfo> singPackageRecords = [];
     for (ReadFileRequest readFileRequest in readFileRequests) {
-      int fileNum = readFileRequest.fileNum!;
-      int recordNum = readFileRequest.recordNum!;
-      ReadFileInfo singleRecord = ReadFileInfo(fileNum: fileNum, recordNum: recordNum, recordLength: 0, dataSizes: []);
+      int fileNum = readFileRequest.fileNum;
+      int recordNum = readFileRequest.recordNum;
+      ReadFileInfo singleRecord = ReadFileInfo(fileNum: fileNum, recordNum: recordNum, recordLength: 0, excelInfos: []);
       packResSize += 2; // 响应长度、参考类型
       int excelKey = (fileNum << 16) + recordNum;
-      for (int i = 0; i < readFileRequest.dataLength!; i++) {
+      for (int i = 0; i < readFileRequest.dataLength; i++) {
         ExcelInfo? excel = excelInfoAll[excelKey];
         if (excel == null) {
           returnEntity.status = -1;
           returnEntity.message = '未找到对应的文件号：${excelKey >> 16}或记录号：${excelKey & 0xffff}';
           return returnEntity;
         }
-        int dataSize = Utils.getTypeSize(excel.type!);
+        int dataSize = Utils.getTypeRegisterSize(excel.type!);
         packResSize += dataSize * 2; // 记录数据高低位
         excelKey += dataSize;
         singleRecord.recordLength = singleRecord.recordLength + dataSize;
 
-        dataSizes.add(dataSize);
-        if (packResSize >= maxResLength || i == (readFileRequest.dataLength! - 1)) {
-          singleRecord.dataSizes = dataSizes;
+        excelInfos.add(excel);
+        if (packResSize >= maxResLength || i == (readFileRequest.dataLength - 1)) {
+          singleRecord.excelInfos = excelInfos;
           singPackageRecords.add(ReadFileInfo(
             fileNum: singleRecord.fileNum,
             recordNum: singleRecord.recordNum,
             recordLength: singleRecord.recordLength,
-            dataSizes: dataSizes.toList(),
+            excelInfos: excelInfos.toList(),
           ));
           if (packResSize >= maxResLength) {
             packResSize = 0;
             allPackageData.add(singPackageRecords.toList());
             singPackageRecords.clear();
           }
-          dataSizes.clear();
+          excelInfos.clear();
           singleRecord.recordNum = singleRecord.recordNum + singleRecord.recordLength;
           singleRecord.recordLength = 0;
-          singleRecord.dataSizes = [];
+          singleRecord.excelInfos = [];
         }
       }
       if (singPackageRecords.isNotEmpty) {
@@ -325,6 +348,68 @@ class Utils {
       packResSize = 0;
     }
 
+    returnEntity.data = allPackageData;
+    return returnEntity;
+  }
+
+  /// 0x15 数据分包
+  static ReturnEntity<List<List<WriteFileInfo>>> packageWriteFileRequest(List<WriteFileRequest> writeFileRequests, Map<int, ExcelInfo> excelInfoAll) {
+    ReturnEntity<List<List<WriteFileInfo>>> returnEntity = ReturnEntity();
+    // 0x15 请求和响应数据类型一致，同上采用maxResLength
+    int maxResLength = 256 - 5 - 7; // subDevice, functionCode, 响应数据长度，CRC，多空一些字符,兼容Modbus-TCP的MBAP头(7)字节
+    List<List<WriteFileInfo>> allPackageData = [];
+
+    // 单包大小计数
+    int packResSize = 0;
+    List<ExcelInfo> excelInfos = [];
+    List<WriteFileInfo> singPackageRecords = [];
+    for (WriteFileRequest writeFileRequest in writeFileRequests) {
+      int fileNum = writeFileRequest.fileNum;
+      int recordNum = writeFileRequest.recordNum;
+      WriteFileInfo singleRecord = WriteFileInfo(fileNum: fileNum, recordNum: recordNum, recordData: [], excelInfos: []);
+      packResSize += (1 + 2 + 2 + 2); // 参考类型，文件号，记录号，记录长度
+      int excelKey = (fileNum << 16) + recordNum;
+      for (int i = 0; i < writeFileRequest.recordData.length; i++) {
+        ExcelInfo? excel = excelInfoAll[excelKey];
+        if (excel == null) {
+          returnEntity.status = -1;
+          returnEntity.message = '未找到对应的文件号：${excelKey >> 16}或记录号：${excelKey & 0xffff}';
+          return returnEntity;
+        }
+        int dataSize = Utils.getTypeRegisterSize(excel.type!);
+        packResSize += dataSize * 2; // 记录数据高低位
+
+        num currentData = writeFileRequest.recordData[i];
+        List<int> currentDataToInt = Utils.dataToIntList(val: currentData, type: excel.type!);
+        singleRecord.recordData.addAll(currentDataToInt);
+
+        excelInfos.add(excel);
+        if (packResSize >= maxResLength || i == (writeFileRequest.recordData.length - 1)) {
+          singleRecord.excelInfos = excelInfos;
+          singPackageRecords.add(WriteFileInfo(
+            fileNum: singleRecord.fileNum,
+            recordNum: singleRecord.recordNum,
+            recordData: singleRecord.recordData,
+            excelInfos: excelInfos.toList(),
+          ));
+          if (packResSize >= maxResLength) {
+            packResSize = 0;
+            allPackageData.add(singPackageRecords.toList());
+            singPackageRecords.clear();
+          }
+          excelInfos.clear();
+          singleRecord.recordNum = singleRecord.recordNum + (excelKey & 0xffff);
+          singleRecord.recordData = [];
+          singleRecord.excelInfos = [];
+        }
+        excelKey += dataSize;
+      }
+      if (singPackageRecords.isNotEmpty) {
+        allPackageData.add(singPackageRecords.toList());
+      }
+      singPackageRecords.clear();
+      packResSize = 0;
+    }
     returnEntity.data = allPackageData;
     return returnEntity;
   }

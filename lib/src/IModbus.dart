@@ -388,19 +388,21 @@ abstract class IModbus {
     return returnEntity;
   }
 
+  Future<ReturnEntity> readFile({required List<ReadFileRequest> readFileRequests});
+
   /// 0x14
   /// allPackageData List<List<ReadFileInfo>> 包集合
   /// List<ReadFileInfo> 单包
-  Future<ReturnEntity<List<int>>> readFileRequest({required List<List<ReadFileInfo>> allPackageData}) async {
-    var returnEntity = ReturnEntity<List<int>>();
+  Future<ReturnEntity<List<num>>> readFileRequest({required List<List<ReadFileInfo>> allPackageData}) async {
+    var returnEntity = ReturnEntity<List<num>>();
     List<List<int>> resultArr = [];
     // 每个数据的占据寄存器个数，方便做结果数据组装,元素个数和结果个数相等
-    List<int> resultTypeMapping = [];
+    List<ExcelInfo> resultTypeMapping = [];
     // 循环发送多包数据
     Utils.log('===包数量：${allPackageData.length}');
     for (int i = 0; i < allPackageData.length; i++) {
       List<ModbusFileRecord> singlePackageRecords = allPackageData[i].map((item) {
-        resultTypeMapping.addAll(item.dataSizes);
+        resultTypeMapping.addAll(item.excelInfos);
         return ModbusFileRecord.empty(
           fileNumber: item.fileNum,
           recordNumber: item.recordNum,
@@ -424,18 +426,49 @@ abstract class IModbus {
     // 结果全部展开
     List<int> expandResultArr = resultArr.expand((element) => element).toList();
     // 返回的结果
-    List<int> resArr = [];
+    List<num> resArr = [];
     for (int i = 0; i < resultTypeMapping.length; i++) {
-      int dataType = resultTypeMapping[i];
+      ExcelInfo excel = resultTypeMapping[i];
+      int dataType = Utils.getTypeRegisterSize(excel.type!);
       if (dataType == 1) {
         resArr.add(expandResultArr.removeAt(0));
       } else {
         int hi = expandResultArr.removeAt(0);
         int lo = expandResultArr.removeAt(0);
-        resArr.add((hi << 16) + lo);
+        int val = (hi << 16) + lo;
+        resArr.add(Utils.getResponseData(val, type: excel.type!, resolution: excel.resolution));
       }
     }
     returnEntity.data = resArr;
+    return returnEntity;
+  }
+
+  /// 0x15
+  Future<ReturnEntity<List<int>>> writeFileRequest({required List<List<WriteFileInfo>> allPackageData}) async {
+    ReturnEntity<List<int>> returnEntity = ReturnEntity();
+    Utils.log('===包数量：${allPackageData.length}');
+    for (int i = 0; i < allPackageData.length; i++) {
+      List<ModbusFileRecord> singlePackageRecords = allPackageData[i].map((item) {
+        return ModbusFileRecord(
+          fileNumber: item.fileNum,
+          recordNumber: item.recordNum,
+          recordBytes: Uint16List.fromList(item.recordData),
+        );
+      }).toList();
+      Utils.log('===当前包：${singlePackageRecords.map((item) => '${item.fileNumber}-${item.recordNumber}-${item.recordLength}').toList().join(',')}');
+      ModbusFileRecordsWriteRequest request = ModbusFileRecordsWriteRequest(singlePackageRecords);
+
+      ModbusResponseCode responseCode = await retrySinglePackage(
+        request: request,
+        packageIndex: i,
+      );
+      if (responseCode != ModbusResponseCode.requestSucceed) {
+        returnEntity.status = -3;
+        returnEntity.message = responseCode.name;
+        return returnEntity;
+      }
+      // print(request);
+    }
     return returnEntity;
   }
 

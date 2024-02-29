@@ -66,6 +66,22 @@ class ModbusActionPower {
     return res;
   }
 
+  /// 0x15功能码获取数据
+  /// readFileInfos
+  ///  fileNum: 文件号
+  ///  recordNum： 记录号
+  ///  dataLength： 数据量
+  Future<ReturnEntity> writeFile({required List<WriteFileRequest> writeFileRequests}) async {
+    // req_21504_3001
+    Stopwatch sw = Stopwatch()..start();
+    List<String> logArr = writeFileRequests.map((e) => '${e.fileNum}-${e.recordNum}-${e.recordData}').toList();
+    Utils.log('===set ${logArr.join(',')}');
+    ReturnEntity res = await master.writeFile(writeFileRequests: writeFileRequests);
+    Utils.log('===set ${logArr.join(',')}, result: ${res.status == 0 ? res.data : res}');
+    Utils.log('===set ${logArr.join(',')}, time: ${(sw..stop()).elapsedMilliseconds}');
+    return res;
+  }
+
   /// 03功能码获取数据
   /// String startRegAddr 起始地址
   /// String dataCount 寄存器个数

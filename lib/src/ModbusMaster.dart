@@ -129,8 +129,10 @@ class ModbusMaster extends IModbus {
     return returnEntity;
   }
 
-  Future<ReturnEntity<List<int>>> readFile({required List<ReadFileRequest> readFileRequests}) async {
-    ReturnEntity<List<int>> returnEntity = ReturnEntity();
+  /// 0x14
+  @override
+  Future<ReturnEntity<List<num>>> readFile({required List<ReadFileRequest> readFileRequests}) async {
+    ReturnEntity<List<num>> returnEntity = ReturnEntity();
     // 分包
     ReturnEntity<List<List<ReadFileInfo>>> returnEntityPackage = Utils.packageReadFileRequest(readFileRequests, excelInfoAll);
     if (returnEntityPackage.status != 0) {
@@ -141,6 +143,26 @@ class ModbusMaster extends IModbus {
 
     if (modbusClientRtu.isConnected) {
       returnEntity = await readFileRequest(allPackageData: returnEntityPackage.data!);
+    } else {
+      returnEntity.status = -1;
+      returnEntity.message = 'not connected or register element group is empty';
+    }
+    return returnEntity;
+  }
+
+  /// 0x15
+  Future<ReturnEntity<List<int>>> writeFile({required List<WriteFileRequest> writeFileRequests}) async {
+    ReturnEntity<List<int>> returnEntity = ReturnEntity();
+    // 分包
+    ReturnEntity<List<List<WriteFileInfo>>> returnEntityPackage = Utils.packageWriteFileRequest(writeFileRequests, excelInfoAll);
+    if (returnEntityPackage.status != 0) {
+      returnEntity.status = returnEntityPackage.status;
+      returnEntity.message = returnEntityPackage.message;
+      return returnEntity;
+    }
+
+    if (modbusClientRtu.isConnected) {
+      returnEntity = await writeFileRequest(allPackageData: returnEntityPackage.data!);
     } else {
       returnEntity.status = -1;
       returnEntity.message = 'not connected or register element group is empty';

@@ -177,14 +177,28 @@ class ExcelInfo {
 }
 
 class WriteFileRequest {
-  int? fileNum;
-  int? recordNum;
-  List<int>? recordData;
+  int fileNum;
+  int recordNum;
+  List<num> recordData;
 
   WriteFileRequest({
-    this.fileNum,
-    this.recordNum,
-    this.recordData,
+    required this.fileNum,
+    required this.recordNum,
+    required this.recordData,
+  });
+}
+
+class WriteFileInfo {
+  int fileNum;
+  int recordNum;
+  List<int> recordData;
+  List<ExcelInfo> excelInfos;
+
+  WriteFileInfo({
+    required this.fileNum,
+    required this.recordNum,
+    required this.recordData,
+    required this.excelInfos,
   });
 }
 
@@ -193,14 +207,14 @@ class WriteFileRequest {
 /// [recordNum]: 记录号
 /// [dataLength]: 读多少条数据
 class ReadFileRequest {
-  int? fileNum;
-  int? recordNum;
-  int? dataLength;
+  int fileNum;
+  int recordNum;
+  int dataLength;
 
   ReadFileRequest({
-    this.fileNum,
-    this.recordNum,
-    this.dataLength,
+    required this.fileNum,
+    required this.recordNum,
+    required this.dataLength,
   });
 }
 
@@ -213,66 +227,12 @@ class ReadFileInfo {
   int fileNum;
   int recordNum;
   int recordLength;
-  List<int> dataSizes;
+  List<ExcelInfo> excelInfos;
 
   ReadFileInfo({
     required this.fileNum,
     required this.recordNum,
     required this.recordLength,
-    required this.dataSizes,
-  });
-}
-
-class WriteFileInfo {
-  int? fileNum;
-  int? recordNum;
-  String? recordData;
-  int? setDatLength;
-
-  WriteFileInfo({
-    this.fileNum,
-    this.recordNum,
-    this.recordData,
-    this.setDatLength = 0,
-  });
-}
-
-class ReadFileGetInfo {
-  int? fileNum;
-  int? recordNum;
-  List<int>? recordData;
-
-  ReadFileGetInfo({
-    this.fileNum,
-    this.recordNum,
-    this.recordData,
-  });
-}
-
-class ReturnRegisterInfo {
-  int? readDatNum;
-  int? readRegNum;
-  List<String>? resolution;
-  List<String>? type;
-  List<int>? reabuf03;
-  List<bool>? reabuf01;
-
-  ReturnRegisterInfo({
-    this.readDatNum = 0,
-    this.readRegNum = 0,
-    this.resolution = const [],
-    this.type = const [],
-    this.reabuf03 = const [],
-    this.reabuf01 = const [],
-  });
-}
-
-class ReturnSetRegisterInfo {
-  List<int>? reabuf10;
-  List<bool>? reabuf0F;
-
-  ReturnSetRegisterInfo({
-    this.reabuf10 = const [],
-    this.reabuf0F = const [],
+    required this.excelInfos,
   });
 }

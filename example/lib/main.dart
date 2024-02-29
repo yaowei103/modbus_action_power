@@ -105,44 +105,45 @@ class _MyAppState extends State<MyApp> {
                           ? () async {
                               final reqStopwatch = Stopwatch()..start();
                               var req = [
-                                // ReadFileRequest(fileNum: 4, recordNum: 14, dataLength: 32),
-                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
-                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 3),
-                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 3),
-                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
-                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
-                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
-                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
-                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
-                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
-                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
-                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
-                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
-                                ReadFileRequest(fileNum: 1, recordNum: 0, dataLength: 4096),
-                                // ReadFileRequest(fileNum: 1, recordNum: 0, dataLength: 4096)
-                              ]; //ReadFileRequest(fileNum: 1, recordNum: 10, dataLength: 150)
+                                ReadFileRequest(fileNum: 2, recordNum: 16, dataLength: 1),
+                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 3),
+                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 3),
+                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
+                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
+                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
+                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
+                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
+                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
+                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
+                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
+                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
+                                // ReadFileRequest(fileNum: 1, recordNum: 0, dataLength: 4096),
+                              ];
                               ReturnEntity res = await _modbusActionPowerPlugin.readFile(readFileRequests: req);
                               setState(() {
-                                setTime = reqStopwatch.elapsedMilliseconds;
+                                getTime = reqStopwatch.elapsedMilliseconds;
                                 getTypeResultData = res.status == 0 && res.data != null ? res.data.toString() : res.message!;
                               });
                             }
                           : null,
                       child: const Text('read file'),
                     ),
-                    // ElevatedButton(
-                    //   onPressed: initDone
-                    //       ? () async {
-                    //           final reqStopwatch = Stopwatch()..start();
-                    //           ReturnEntity res = await _modbusActionPowerPlugin.master.readFileRequestTest();
-                    //           setState(() {
-                    //             setTime = reqStopwatch.elapsedMilliseconds;
-                    //             getTypeResultData = res.status == 0 && res.data != null ? res.data : res.message;
-                    //           });
-                    //         }
-                    //       : null,
-                    //   child: const Text('test read file'),
-                    // ),
+                    ElevatedButton(
+                      onPressed: initDone
+                          ? () async {
+                              final reqStopwatch = Stopwatch()..start();
+                              List<WriteFileRequest> writeFileRequests = [
+                                WriteFileRequest(fileNum: 2, recordNum: 16, recordData: [10.55]),
+                              ];
+                              ReturnEntity res = await _modbusActionPowerPlugin.writeFile(writeFileRequests: writeFileRequests);
+                              setState(() {
+                                setTime = reqStopwatch.elapsedMilliseconds;
+                                setTypeResultData = res.status == 0 && res.data != null ? res.data : res.message;
+                              });
+                            }
+                          : null,
+                      child: const Text('write file'),
+                    ),
                     const Divider(),
                     ElevatedButton(
                       onPressed: initDone

@@ -43,14 +43,12 @@ abstract class ModbusClientSerial extends ModbusClient {
   Uint8List _getTxTelegram(ModbusRequest request, int unitId);
 
   /// Read response from device.
-  ModbusResponseCode _readResponseHeader(
-      _ModbusSerialResponse response, int timeoutMillis);
+  ModbusResponseCode _readResponseHeader(_ModbusSerialResponse response, int timeoutMillis);
 
   /// Reads the full pdu response from device.
   ///
   /// NOTE: response header should be read already!
-  ModbusResponseCode _readResponsePdu(
-      _ModbusSerialResponse response, int timeoutMillis);
+  ModbusResponseCode _readResponsePdu(_ModbusSerialResponse response, int timeoutMillis);
 
   /// Returns true if connection is established
   @override
@@ -85,8 +83,7 @@ abstract class ModbusClientSerial extends ModbusClient {
           return ModbusResponseCode.connectionFailed;
         }
       } catch (ex) {
-        ModbusAppLogger.severe(
-            "Unexpected exception in connecting to $portName", ex);
+        ModbusAppLogger.severe("Unexpected exception in connecting to $portName", ex);
         return ModbusResponseCode.connectionFailed;
       }
 
@@ -104,29 +101,22 @@ abstract class ModbusClientSerial extends ModbusClient {
 
         // Sent the serial telegram
         var reqTxData = _getTxTelegram(request, unitId);
-        int txDataCount =
-            _serialPort!.write(reqTxData, timeout: resTimeoutMillis);
+        int txDataCount = _serialPort!.write(reqTxData, timeout: resTimeoutMillis);
         if (txDataCount < reqTxData.length) {
           request.setResponseCode(ModbusResponseCode.requestTimeout);
           return request.responseCode;
         }
       } catch (ex) {
-        ModbusAppLogger.severe(
-            "Unexpected exception in sending data to $portName", ex);
+        ModbusAppLogger.severe("Unexpected exception in sending data to $portName", ex);
         request.setResponseCode(ModbusResponseCode.requestTxFailed);
         return request.responseCode;
       }
 
       // Lets check the response header (i.e.read first bytes only to check if
       // response is normal or has error)
-      var response = _ModbusSerialResponse(
-          request: request,
-          unitId: unitId,
-          checksumByteCount: checksumByteCount);
+      var response = _ModbusSerialResponse(request: request, unitId: unitId, checksumByteCount: checksumByteCount);
       int remainingMillis = resTimeoutMillis - reqStopwatch.elapsedMilliseconds;
-      var responseCode = remainingMillis > 0
-          ? _readResponseHeader(response, remainingMillis)
-          : ModbusResponseCode.requestTimeout;
+      var responseCode = remainingMillis > 0 ? _readResponseHeader(response, remainingMillis) : ModbusResponseCode.requestTimeout;
       if (responseCode != ModbusResponseCode.requestSucceed) {
         request.setResponseCode(responseCode);
         return request.responseCode;
@@ -134,9 +124,7 @@ abstract class ModbusClientSerial extends ModbusClient {
 
       // Lets wait the rest of the PDU response
       remainingMillis = resTimeoutMillis - reqStopwatch.elapsedMilliseconds;
-      responseCode = remainingMillis > 0
-          ? _readResponsePdu(response, remainingMillis)
-          : ModbusResponseCode.requestTimeout;
+      responseCode = remainingMillis > 0 ? _readResponsePdu(response, remainingMillis) : ModbusResponseCode.requestTimeout;
       if (responseCode != ModbusResponseCode.requestSucceed) {
         request.setResponseCode(responseCode);
         return request.responseCode;
@@ -192,14 +180,10 @@ class _ModbusSerialResponse {
   final int unitId;
   final int checksumByteCount;
 
-  _ModbusSerialResponse(
-      {required this.request,
-      required this.unitId,
-      required this.checksumByteCount});
+  _ModbusSerialResponse({required this.request, required this.unitId, required this.checksumByteCount});
 
   List<int>? _rxData;
-  void setRxData(List<int> rxData) =>
-      _rxData = List<int>.from(rxData, growable: true);
+  void setRxData(List<int> rxData) => _rxData = List<int>.from(rxData, growable: true);
   void addRxData(List<int> rxData) => _rxData!.addAll(rxData);
 
   ModbusResponseCode get headerResponseCode {
@@ -209,7 +193,7 @@ class _ModbusSerialResponse {
     if (_rxData![0] != unitId) {
       return ModbusResponseCode.requestRxWrongUnitId;
     }
-    if ((_rxData![1] & 0x83 != 0) && (_rxData![1] & 0x86 != 0) && (_rxData![1] & 0x90 != 0)) {
+    if ((_rxData![1] & 0x80) != 0) {
       return ModbusResponseCode.fromCode(_rxData![2]);
     }
     if (_rxData![1] != request.functionCode) {
@@ -218,17 +202,10 @@ class _ModbusSerialResponse {
     return ModbusResponseCode.requestSucceed;
   }
 
-  Iterable<int> getRxData({required bool includeChecksum}) => _rxData!
-      .getRange(0, _rxData!.length - (includeChecksum ? 0 : checksumByteCount));
+  Iterable<int> getRxData({required bool includeChecksum}) => _rxData!.getRange(0, _rxData!.length - (includeChecksum ? 0 : checksumByteCount));
 
   Uint8List get pdu => // serial telegram has: <unit id> + <pdu> + <checksum>
-      _rxData == null
-          ? Uint8List(0)
-          : Uint8List.fromList(
-              _rxData!.sublist(1, _rxData!.length - checksumByteCount));
+      _rxData == null ? Uint8List(0) : Uint8List.fromList(_rxData!.sublist(1, _rxData!.length - checksumByteCount));
 
-  Uint8List get checksum => _rxData == null
-      ? Uint8List(0)
-      : Uint8List.fromList(
-          _rxData!.sublist(_rxData!.length - checksumByteCount));
+  Uint8List get checksum => _rxData == null ? Uint8List(0) : Uint8List.fromList(_rxData!.sublist(_rxData!.length - checksumByteCount));
 }

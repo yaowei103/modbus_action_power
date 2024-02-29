@@ -8,14 +8,14 @@ int lo(int value) => (value & 0x00FF);
 class ModbusFileRecord {
   final int fileNumber;
   final int recordNumber;
-  Uint8List recordBytes;
+  Uint16List recordBytes;
 
   int get recordLength => recordBytes.length;
 
   ModbusFileRecord({required this.fileNumber, required this.recordNumber, required this.recordBytes});
 
   factory ModbusFileRecord.empty({required int fileNumber, required int recordNumber, required int recordLength}) =>
-      ModbusFileRecord(fileNumber: fileNumber, recordNumber: recordNumber, recordBytes: Uint8List(recordLength));
+      ModbusFileRecord(fileNumber: fileNumber, recordNumber: recordNumber, recordBytes: Uint16List(recordLength));
 }
 
 /// The read table records request.

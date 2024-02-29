@@ -38,29 +38,22 @@ enum ModbusElementType {
   discreteInput(ModbusFunctionCode.readDiscreteInputs),
 
   /// Single bit [Read-Write]
-  coil(ModbusFunctionCode.readCoils, ModbusFunctionCode.writeSingleCoil,
-      ModbusFunctionCode.writeMultipleCoils),
+  coil(ModbusFunctionCode.readCoils, ModbusFunctionCode.writeSingleCoil, ModbusFunctionCode.writeMultipleCoils),
 
   /// 16-bit word [Read-Only]
   inputRegister(ModbusFunctionCode.readInputRegisters),
 
   /// 16-bit word [Read-Write]
-  holdingRegister(
-      ModbusFunctionCode.readHoldingRegisters,
-      ModbusFunctionCode.writeSingleHoldingRegister,
-      ModbusFunctionCode.writeMultipleHoldingRegisters);
+  holdingRegister(ModbusFunctionCode.readHoldingRegisters, ModbusFunctionCode.writeSingleHoldingRegister, ModbusFunctionCode.writeMultipleHoldingRegisters);
 
-  const ModbusElementType(this.readFunction,
-      [this.writeSingleFunction, this.writeMultipleFunction]);
+  const ModbusElementType(this.readFunction, [this.writeSingleFunction, this.writeMultipleFunction]);
 
   final ModbusFunctionCode readFunction;
   final ModbusFunctionCode? writeSingleFunction;
   final ModbusFunctionCode? writeMultipleFunction;
 
   /// True if the element type represents a registry type
-  bool get isRegister =>
-      this == ModbusElementType.inputRegister ||
-      this == ModbusElementType.holdingRegister;
+  bool get isRegister => this == ModbusElementType.inputRegister || this == ModbusElementType.holdingRegister;
 
   /// True if the element type represents a bit type
   bool get isBit => !isRegister;
@@ -106,14 +99,17 @@ enum ModbusResponseCode {
   requestRxWrongChecksum(0xF6, false),
   undefinedErrorCode(0xFF, false);
 
-  const ModbusResponseCode(this.code,
-      [this.isStandardModbusExceptionCode = true]);
+  const ModbusResponseCode(this.code, [this.isStandardModbusExceptionCode = true]);
   final int code;
   final bool isStandardModbusExceptionCode;
 
-  factory ModbusResponseCode.fromCode(int code) =>
-      values.singleWhere((e) => code == e.code,
-          orElse: () => ModbusResponseCode.undefinedErrorCode);
+  factory ModbusResponseCode.fromCode(int code) => values.singleWhere(
+        (e) => code == e.code,
+        orElse: () {
+          print('----------------:code:$code');
+          return ModbusResponseCode.undefinedErrorCode;
+        },
+      );
 }
 
 /// The connection mode used when sending a request.
