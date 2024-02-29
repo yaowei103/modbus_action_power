@@ -286,10 +286,10 @@ class Utils {
   /// 分包后
   /// [
   ///   [
-  ///     ReadFineInfo(fileNum:2, recordNum: 0, datalength: 9, dataSizes: [1,2,1,1,1,1,2,1,1], (对应：'uint16', 'uint32', 'uint16', 'uint16', 'uint16', 'uint16', 'uint32', 'uint16', 'uint16')), // recordLength: 11
-  ///     ReadFileInfo(fileNum:2, recordNum: 15, datalength: 100, dataSizes: []), // recordLength: 11
-  ///     ReadFileInfo(fileNum:2, recordNum: 115, datalength: 100, dataSizes: []), // recordLength: 11
-  ///     ReadFileInfo(fileNum:2, recordNum: 215, datalength: 100, dataSizes: []), // recordLength: 11
+  ///     ReadFineInfo(fileNum:2, recordNum: 0, recordLength: 9, excelInfos: [],
+  ///     ReadFileInfo(fileNum:2, recordNum: 15, recordLength: 100, excelInfos: []),
+  ///     ReadFileInfo(fileNum:2, recordNum: 115, recordLength: 100, excelInfos: []),
+  ///     ReadFileInfo(fileNum:2, recordNum: 215, recordLength: 100, excelInfos: []),
   ///   ]
   /// ]
   static ReturnEntity<List<List<ReadFileInfo>>> packageReadFileRequest(List<ReadFileRequest> readFileRequests, Map<int, ExcelInfo> excelInfoAll) {
@@ -316,10 +316,9 @@ class Utils {
           returnEntity.message = '未找到对应的文件号：${excelKey >> 16}或记录号：${excelKey & 0xffff}';
           return returnEntity;
         }
-        int dataSize = Utils.getTypeRegisterSize(excel.type!);
-        packResSize += dataSize * 2; // 记录数据高低位
-        excelKey += dataSize;
-        singleRecord.recordLength = singleRecord.recordLength + dataSize;
+        int registerSize = Utils.getTypeRegisterSize(excel.type!);
+        packResSize += registerSize * 2; // 记录数据高低位
+        singleRecord.recordLength = singleRecord.recordLength + registerSize;
 
         excelInfos.add(excel);
         if (packResSize >= maxResLength || i == (readFileRequest.dataLength - 1)) {
@@ -336,10 +335,12 @@ class Utils {
             singPackageRecords.clear();
           }
           excelInfos.clear();
-          singleRecord.recordNum = singleRecord.recordNum + singleRecord.recordLength;
+          singleRecord.recordNum = (excelKey & 0x0000ffff) + registerSize;
+          ;
           singleRecord.recordLength = 0;
           singleRecord.excelInfos = [];
         }
+        excelKey += registerSize;
       }
       if (singPackageRecords.isNotEmpty) {
         allPackageData.add(singPackageRecords.toList());
@@ -376,8 +377,8 @@ class Utils {
           returnEntity.message = '未找到对应的文件号：${excelKey >> 16}或记录号：${excelKey & 0xffff}';
           return returnEntity;
         }
-        int dataSize = Utils.getTypeRegisterSize(excel.type!);
-        packResSize += dataSize * 2; // 记录数据高低位
+        int registerSize = Utils.getTypeRegisterSize(excel.type!);
+        packResSize += registerSize * 2; // 记录数据高低位
 
         num currentData = writeFileRequest.recordData[i];
         List<int> currentDataToInt = Utils.dataToIntList(val: currentData, type: excel.type!);
@@ -398,11 +399,11 @@ class Utils {
             singPackageRecords.clear();
           }
           excelInfos.clear();
-          singleRecord.recordNum = singleRecord.recordNum + (excelKey & 0xffff);
+          singleRecord.recordNum = (excelKey & 0x0000ffff) + registerSize;
           singleRecord.recordData = [];
           singleRecord.excelInfos = [];
         }
-        excelKey += dataSize;
+        excelKey += registerSize;
       }
       if (singPackageRecords.isNotEmpty) {
         allPackageData.add(singPackageRecords.toList());

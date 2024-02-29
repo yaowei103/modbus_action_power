@@ -105,18 +105,18 @@ class _MyAppState extends State<MyApp> {
                           ? () async {
                               final reqStopwatch = Stopwatch()..start();
                               var req = [
-                                ReadFileRequest(fileNum: 2, recordNum: 16, dataLength: 1),
-                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 3),
-                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 3),
-                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
-                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
-                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
-                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
-                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
-                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
-                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
-                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
-                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
+                                // ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 100),
+                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 3),
+                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 3),
+                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
+                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
+                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
+                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
+                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
+                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
+                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
+                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
+                                ReadFileRequest(fileNum: 2, recordNum: 15, dataLength: 63),
                                 // ReadFileRequest(fileNum: 1, recordNum: 0, dataLength: 4096),
                               ];
                               ReturnEntity res = await _modbusActionPowerPlugin.readFile(readFileRequests: req);
@@ -133,7 +133,14 @@ class _MyAppState extends State<MyApp> {
                           ? () async {
                               final reqStopwatch = Stopwatch()..start();
                               List<WriteFileRequest> writeFileRequests = [
-                                WriteFileRequest(fileNum: 2, recordNum: 16, recordData: [10.55]),
+                                WriteFileRequest(
+                                    fileNum: 2,
+                                    recordNum: 15,
+                                    recordData: [1, 10.5566778899, 11.5566778899, 12.5566778899, 13.5566778899, 14.5566778899, 15.5566778899, 16.5566778899, 1000]),
+                                WriteFileRequest(
+                                    fileNum: 2,
+                                    recordNum: 15,
+                                    recordData: [1, 10.5566778899, 11.5566778899, 12.5566778899, 13.5566778899, 14.5566778899, 15.5566778899, 16.5566778899, 1000]),
                               ];
                               ReturnEntity res = await _modbusActionPowerPlugin.writeFile(writeFileRequests: writeFileRequests);
                               setState(() {

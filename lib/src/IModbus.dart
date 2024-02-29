@@ -397,12 +397,12 @@ abstract class IModbus {
     var returnEntity = ReturnEntity<List<num>>();
     List<List<int>> resultArr = [];
     // 每个数据的占据寄存器个数，方便做结果数据组装,元素个数和结果个数相等
-    List<ExcelInfo> resultTypeMapping = [];
+    List<ExcelInfo> resultExcelInfos = [];
     // 循环发送多包数据
     Utils.log('===包数量：${allPackageData.length}');
     for (int i = 0; i < allPackageData.length; i++) {
       List<ModbusFileRecord> singlePackageRecords = allPackageData[i].map((item) {
-        resultTypeMapping.addAll(item.excelInfos);
+        resultExcelInfos.addAll(item.excelInfos);
         return ModbusFileRecord.empty(
           fileNumber: item.fileNum,
           recordNumber: item.recordNum,
@@ -427,11 +427,11 @@ abstract class IModbus {
     List<int> expandResultArr = resultArr.expand((element) => element).toList();
     // 返回的结果
     List<num> resArr = [];
-    for (int i = 0; i < resultTypeMapping.length; i++) {
-      ExcelInfo excel = resultTypeMapping[i];
+    for (int i = 0; i < resultExcelInfos.length; i++) {
+      ExcelInfo excel = resultExcelInfos[i];
       int dataType = Utils.getTypeRegisterSize(excel.type!);
       if (dataType == 1) {
-        resArr.add(expandResultArr.removeAt(0));
+        resArr.add(Utils.getResponseData(expandResultArr.removeAt(0), type: excel.type!, resolution: excel.resolution));
       } else {
         int hi = expandResultArr.removeAt(0);
         int lo = expandResultArr.removeAt(0);
