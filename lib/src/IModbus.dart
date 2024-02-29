@@ -429,8 +429,8 @@ abstract class IModbus {
     List<num> resArr = [];
     for (int i = 0; i < resultExcelInfos.length; i++) {
       ExcelInfo excel = resultExcelInfos[i];
-      int dataType = Utils.getTypeRegisterSize(excel.type!);
-      if (dataType == 1) {
+      int registerSize = Utils.getTypeRegisterSize(excel.type!);
+      if (registerSize == 1) {
         resArr.add(Utils.getResponseData(expandResultArr.removeAt(0), type: excel.type!, resolution: excel.resolution));
       } else {
         int hi = expandResultArr.removeAt(0);
